@@ -14,7 +14,7 @@ const ALL_GROUPS: MuscleGroup[] = [
 export default function RoutinePage() {
   const { day }    = useParams<{ day: string }>();
   const navigate   = useNavigate();
-  const { routines, loading: rLoading, toggleComplete, setMuscleGroup, setNotes } = useRoutines();
+  const { routines, loading: rLoading, toggleComplete, setMuscleGroup } = useRoutines();
 
   const routine = routines.find(r => r.day.toLowerCase() === day?.toLowerCase());
   const { exercises, loading: exLoading, add, remove, update } = useExercises(routine?.id);
