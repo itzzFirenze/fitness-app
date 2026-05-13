@@ -6,7 +6,7 @@ interface Props {
    size?: 'sm' | 'md' | 'lg';
 }
 
-const muscleConfig: Record<MuscleGroup, { emoji: string; color: string; bg: string }> = {
+export const muscleConfig: Record<MuscleGroup, { emoji: string; color: string; bg: string }> = {
    Back: { emoji: '🏋️', color: '#FB3640', bg: 'rgba(251,54,64,0.15)' },
    Chest: { emoji: '💪', color: '#ff6d72', bg: 'rgba(255,109,114,0.15)' },
    Biceps: { emoji: '💪', color: '#ff6d72', bg: 'rgba(255,109,114,0.15)' },
@@ -24,7 +24,7 @@ const fontMap = { sm: '0.65rem', md: '0.75rem', lg: '0.9rem' };
 const padMap = { sm: '3px 8px', md: '4px 10px', lg: '6px 14px' };
 
 /** Tries /muscles/{group}.png — shows emoji if the file doesn't exist */
-function MuscleIcon({ group, px, emoji }: { group: MuscleGroup; px: number; emoji: string }) {
+export function MuscleIcon({ group, px, emoji }: { group: MuscleGroup; px: number; emoji: string }) {
    const [failed, setFailed] = useState(false);
    const src = `/muscles/${group.toLowerCase()}.png`;
 
