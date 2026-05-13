@@ -1,0 +1,47 @@
+.ec {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.2s; gap: 12px;
+}
+.ec:hover { background: rgba(255,255,255,0.055); }
+.ec--editing { flex-direction: column; align-items: stretch;
+  background: rgba(99,102,241,0.07); border-color: rgba(99,102,241,0.3); }
+
+.ec__info  { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.ec__name  { font-size: 0.95rem; font-weight: 600; color: #f1f5f9;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ec__chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip      { font-size: 0.68rem; font-weight: 600; padding: 2px 9px;
+  border-radius: 999px; background: rgba(255,255,255,0.07); color: #94a3b8; }
+.chip--weight { background: rgba(99,102,241,0.18); color: #a5b4fc; }
+
+.ec__btns  { display: flex; gap: 4px; }
+.icon-btn  { background: none; border: none; cursor: pointer; padding: 6px;
+  border-radius: 8px; font-size: 1rem; transition: background 0.15s, transform 0.1s; }
+.icon-btn:hover { transform: scale(1.15); }
+
+/* Edit form */
+.ec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+@media (max-width: 500px) { .ec-grid { grid-template-columns: 1fr 1fr; } }
+.span2 { grid-column: span 2; }
+
+.ec-field { display: flex; flex-direction: column; gap: 4px; }
+.ec-field label { font-size: 0.66rem; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.5px; }
+.ec-field input { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 8px 10px; color: #f1f5f9; font-size: 0.88rem;
+  outline: none; font-family: inherit; transition: border-color 0.2s; }
+.ec-field input:focus { border-color: #6366f1; }
+
+.ec-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+.btn-primary { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
+  border: none; border-radius: 8px; padding: 8px 20px; font-size: 0.85rem;
+  font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-ghost { background: rgba(255,255,255,0.06); color: #94a3b8;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 16px;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); }

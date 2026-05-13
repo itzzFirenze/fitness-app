@@ -1,0 +1,90 @@
+import type { WeeklyPlan } from '../types';
+
+export const defaultWeeklyPlan: WeeklyPlan = [
+  {
+    day: 'Monday',
+    muscleGroup: 'Back',
+    completed: false,
+    notes: 'Focus on mind-muscle connection',
+    exercises: [
+      { id: 'mon-1', name: 'Deadlift', sets: 4, reps: '5', weight: '100kg' },
+      { id: 'mon-2', name: 'Pull-Ups', sets: 4, reps: '8-10', weight: 'Bodyweight' },
+      { id: 'mon-3', name: 'Bent Over Row', sets: 3, reps: '10-12', weight: '70kg' },
+      { id: 'mon-4', name: 'Lat Pulldown', sets: 3, reps: '12', weight: '60kg' },
+      { id: 'mon-5', name: 'Cable Row', sets: 3, reps: '12-15', weight: '50kg' },
+    ],
+  },
+  {
+    day: 'Tuesday',
+    muscleGroup: 'Shoulders',
+    completed: false,
+    notes: 'Warm up rotator cuffs',
+    exercises: [
+      { id: 'tue-1', name: 'Overhead Press', sets: 4, reps: '8', weight: '60kg' },
+      { id: 'tue-2', name: 'Lateral Raises', sets: 4, reps: '15', weight: '10kg' },
+      { id: 'tue-3', name: 'Front Raises', sets: 3, reps: '12', weight: '8kg' },
+      { id: 'tue-4', name: 'Face Pulls', sets: 3, reps: '15', weight: '20kg' },
+      { id: 'tue-5', name: 'Arnold Press', sets: 3, reps: '10', weight: '18kg' },
+    ],
+  },
+  {
+    day: 'Wednesday',
+    muscleGroup: 'Legs',
+    completed: false,
+    notes: 'Go deep on squats',
+    exercises: [
+      { id: 'wed-1', name: 'Barbell Squat', sets: 4, reps: '6-8', weight: '100kg' },
+      { id: 'wed-2', name: 'Romanian Deadlift', sets: 3, reps: '10', weight: '80kg' },
+      { id: 'wed-3', name: 'Leg Press', sets: 3, reps: '12', weight: '120kg' },
+      { id: 'wed-4', name: 'Leg Curl', sets: 3, reps: '12-15', weight: '40kg' },
+      { id: 'wed-5', name: 'Calf Raises', sets: 4, reps: '20', weight: '60kg' },
+    ],
+  },
+  {
+    day: 'Thursday',
+    muscleGroup: 'Chest',
+    completed: false,
+    notes: 'Squeeze at top of every rep',
+    exercises: [
+      { id: 'thu-1', name: 'Bench Press', sets: 4, reps: '8', weight: '80kg' },
+      { id: 'thu-2', name: 'Incline DB Press', sets: 3, reps: '10-12', weight: '30kg' },
+      { id: 'thu-3', name: 'Cable Flyes', sets: 3, reps: '12-15', weight: '15kg' },
+      { id: 'thu-4', name: 'Dips', sets: 3, reps: '10-12', weight: 'Bodyweight' },
+      { id: 'thu-5', name: 'Push-Ups', sets: 3, reps: 'Failure', weight: 'Bodyweight' },
+    ],
+  },
+  {
+    day: 'Friday',
+    muscleGroup: 'Arms',
+    completed: false,
+    notes: 'Slow negatives for hypertrophy',
+    exercises: [
+      { id: 'fri-1', name: 'Barbell Curl', sets: 4, reps: '10', weight: '40kg' },
+      { id: 'fri-2', name: 'Skull Crushers', sets: 3, reps: '10-12', weight: '30kg' },
+      { id: 'fri-3', name: 'Hammer Curls', sets: 3, reps: '12', weight: '15kg' },
+      { id: 'fri-4', name: 'Tricep Pushdown', sets: 3, reps: '12-15', weight: '25kg' },
+      { id: 'fri-5', name: 'Concentration Curl', sets: 2, reps: '15', weight: '12kg' },
+      { id: 'fri-6', name: 'Overhead Tricep Ext.', sets: 2, reps: '15', weight: '20kg' },
+    ],
+  },
+  {
+    day: 'Saturday',
+    muscleGroup: 'Core',
+    completed: false,
+    notes: 'Core + light cardio',
+    exercises: [
+      { id: 'sat-1', name: 'Plank', sets: 3, reps: '60 sec', weight: 'Bodyweight' },
+      { id: 'sat-2', name: 'Cable Crunch', sets: 3, reps: '15', weight: '30kg' },
+      { id: 'sat-3', name: 'Hanging Leg Raise', sets: 3, reps: '12', weight: 'Bodyweight' },
+      { id: 'sat-4', name: 'Russian Twists', sets: 3, reps: '20', weight: '10kg' },
+      { id: 'sat-5', name: 'Ab Wheel Rollout', sets: 3, reps: '10', weight: 'Bodyweight' },
+    ],
+  },
+  {
+    day: 'Sunday',
+    muscleGroup: 'Rest',
+    completed: false,
+    notes: 'Active recovery — walk, stretch or yoga',
+    exercises: [],
+  },
+];

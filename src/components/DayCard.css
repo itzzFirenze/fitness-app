@@ -1,0 +1,42 @@
+.dc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  gap: 12px;
+  user-select: none;
+}
+.dc:hover       { background: rgba(255,255,255,0.05); transform: translateX(3px); }
+.dc:active      { transform: translateX(1px); }
+.dc--today      { border-color: rgba(99,102,241,0.5); box-shadow: 0 0 0 1px rgba(99,102,241,0.2), 0 8px 28px rgba(99,102,241,0.1); }
+.dc--done       { border-color: rgba(74,222,128,0.25); }
+.dc--done .dc__day { color: #94a3b8; }
+
+.dc__left  { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.dc__right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.dc__today-pill {
+  font-size: 0.58rem; font-weight: 800; letter-spacing: 0.6px;
+  background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
+  padding: 2px 8px; border-radius: 999px;
+}
+.dc__day   { font-size: 1rem; font-weight: 800; color: #f1f5f9; min-width: 80px; }
+.dc__arrow { font-size: 1.4rem; color: #475569; line-height: 1; }
+
+.dc__check {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: transparent; font-size: 0.8rem; font-weight: 800;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.dc__check:hover      { border-color: rgba(99,102,241,0.6); color: #a5b4fc; }
+.dc__check--done      { border-color: rgba(74,222,128,0.6); background: rgba(74,222,128,0.15); color: #4ade80; }
+.dc__check--done:hover{ border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.1); color: #f87171; }
