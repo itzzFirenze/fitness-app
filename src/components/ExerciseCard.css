@@ -127,7 +127,7 @@
 
 .ec__type {
    font-size: 0.65rem;
-   color: #1e293b;
+   color: rgb(179, 185, 193);
    font-weight: 600;
    text-transform: capitalize;
    letter-spacing: 0.2px;
@@ -352,12 +352,12 @@
 
 .set-head {
    display: grid;
-   grid-template-columns: 26px 1fr 1fr 30px 22px;
+   grid-template-columns: 26px 1fr 1fr 22px;
    gap: 6px;
    padding: 6px 2px 5px;
    font-size: 0.6rem;
    font-weight: 800;
-   color: #1e293b;
+   color: rgb(179, 185, 193);
    letter-spacing: 0.6px;
    text-transform: uppercase;
    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -366,7 +366,7 @@
 
 .set-row {
    display: grid;
-   grid-template-columns: 26px 1fr 1fr 30px 22px;
+   grid-template-columns: 26px 1fr 1fr 22px;
    gap: 6px;
    align-items: center;
    padding: 4px 2px;
@@ -385,7 +385,7 @@
 .set-num {
    font-size: 0.72rem;
    font-weight: 800;
-   color: #334155;
+   color: rgb(179, 185, 193);
    text-align: center;
    line-height: 1;
 }
@@ -447,8 +447,8 @@
 .set-rm {
    background: none;
    border: none;
-   color: #1e293b;
-   font-size: 0.95rem;
+   color: rgb(179, 185, 193);
+   font-size: 1.5rem;
    cursor: pointer;
    padding: 2px;
    border-radius: 5px;

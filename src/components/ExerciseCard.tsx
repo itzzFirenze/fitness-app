@@ -6,6 +6,7 @@ import './ExerciseCard.css';
 
 interface Props {
   exercise: Exercise;
+  muscleGroup: string;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onRemove: (id: string) => void;
 }
@@ -33,7 +34,7 @@ function uid() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ExerciseCard({ exercise: ex, onUpdate, onRemove }: Props) {
+export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove }: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [editingName,  setEditingName]  = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
@@ -47,15 +48,17 @@ export default function ExerciseCard({ exercise: ex, onUpdate, onRemove }: Props
 
   const cfg       = typeConfig(ex.exercise_type);
   const sets      = getEffectiveSets(ex);
-  const doneCount = sets.filter(s => s.completed).length;
   const hasImage  = Boolean(ex.image_url);
+  const allCompleted = sets.length > 0 && sets.every(s => s.completed);
 
   /* ── Set helpers ─────────────────────────────────────── */
   const saveSets = (next: SetEntry[]) =>
     onUpdate(ex.id, { set_data: next, sets: next.length });
 
-  const toggleSet = (id: string) =>
-    saveSets(sets.map(s => s.id === id ? { ...s, completed: !s.completed } : s));
+  const toggleAllSets = () => {
+    const nextState = !allCompleted;
+    saveSets(sets.map(s => ({ ...s, completed: nextState })));
+  };
 
   const patchSet = (id: string, field: 'reps' | 'weight', val: string) =>
     saveSets(sets.map(s => s.id === id ? { ...s, [field]: val } : s));
@@ -162,17 +165,16 @@ export default function ExerciseCard({ exercise: ex, onUpdate, onRemove }: Props
             <span className="ec__name">{ex.name}</span>
           )}
           <div className="ec__meta">
-            <span className="ec__pill">
-              {doneCount}/{sets.length} sets
-              {doneCount > 0 && doneCount === sets.length &&
-                <span className="ec__done-badge">✓</span>}
-            </span>
-            <span className="ec__type">{ex.exercise_type || 'strength'}</span>
+            <span className="ec__type">{muscleGroup}</span>
           </div>
         </div>
 
         {/* Icons */}
         <div className="ec__actions">
+          <button className="ec__ic" title="Mark complete" onClick={e => { e.stopPropagation(); toggleAllSets(); }}
+            style={{ color: allCompleted ? '#4ade80' : 'rgba(255, 255, 255, 0.2)' }}>
+            ✓
+          </button>
           <button className="ec__ic" title="Rename"
             onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>✏️</button>
           <button className="ec__ic ec__ic--del" title="Delete" onClick={() => onRemove(ex.id)}>🗑️</button>
@@ -248,19 +250,14 @@ export default function ExerciseCard({ exercise: ex, onUpdate, onRemove }: Props
               <span>REPS</span>
               <span>WEIGHT</span>
               <span></span>
-              <span></span>
             </div>
             {sets.map((s, i) => (
-              <div key={s.id} className={`set-row ${s.completed ? 'set-row--done' : ''}`}>
+              <div key={s.id} className={`set-row ${allCompleted ? 'set-row--done' : ''}`}>
                 <span className="set-num">{i + 1}</span>
                 <input className="set-inp" value={s.reps} placeholder="reps"
                   onChange={e => patchSet(s.id, 'reps', e.target.value)} />
                 <input className="set-inp" value={s.weight} placeholder="kg"
                   onChange={e => patchSet(s.id, 'weight', e.target.value)} />
-                <button className={`set-chk ${s.completed ? 'set-chk--done' : ''}`}
-                  onClick={() => toggleSet(s.id)}>
-                  {s.completed ? '✓' : '○'}
-                </button>
                 <button className="set-rm" onClick={() => deleteSet(s.id)}
                   disabled={sets.length <= 1}>×</button>
               </div>

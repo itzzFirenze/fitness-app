@@ -21,8 +21,6 @@ export default function RoutinePage() {
 
   const [showModal,    setShowModal]    = useState(false);
   const [editingGroup, setEditingGroup] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesDraft,   setNotesDraft]   = useState('');
 
   if (rLoading) return (
     <div className="rp-loading"><div className="spinner" /><p>Loading…</p></div>
@@ -72,28 +70,7 @@ export default function RoutinePage() {
           )}
         </header>
 
-        {/* Notes */}
-        <div className="rp__notes">
-          {editingNotes ? (
-            <div className="rp__notes-edit">
-              <textarea
-                autoFocus
-                value={notesDraft}
-                onChange={e => setNotesDraft(e.target.value)}
-                placeholder="Add a note for this day…"
-                rows={3}
-              />
-              <div className="rp__notes-actions">
-                <button className="btn-primary" onClick={() => { setNotes(routine, notesDraft); setEditingNotes(false); }}>Save</button>
-                <button className="btn-ghost" onClick={() => setEditingNotes(false)}>Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <button className="rp__notes-btn" onClick={() => { setNotesDraft(routine.notes || ''); setEditingNotes(true); }}>
-              {routine.notes ? `💬 ${routine.notes}` : '+ Add a note'}
-            </button>
-          )}
-        </div>
+
 
         {/* Body */}
         {isRest ? (
@@ -117,6 +94,7 @@ export default function RoutinePage() {
                   <ExerciseCard
                     key={ex.id}
                     exercise={ex}
+                    muscleGroup={routine.muscle_group}
                     onUpdate={update}
                     onRemove={remove}
                   />
