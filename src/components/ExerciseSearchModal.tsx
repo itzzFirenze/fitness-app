@@ -13,7 +13,7 @@ interface Props {
 
 type Tab = 'search' | 'manual';
 
-const DIFFICULTIES = ['', 'beginner', 'intermediate', 'expert'];
+
 
 export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onClose }: Props) {
   const [tab,         setTab]         = useState<Tab>('search');
