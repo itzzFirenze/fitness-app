@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { Exercise } from '../types';
 import './ExerciseRow.css';
 
@@ -86,14 +87,14 @@ export default function ExerciseRow({ exercise, onUpdate, onRemove }: Props) {
           onClick={() => setEditing(true)}
           title="Edit"
         >
-          ✏️
+          <Pencil size={18} />
         </button>
         <button
           className="ex-btn ex-btn--delete"
           onClick={() => onRemove(exercise.id)}
           title="Remove"
         >
-          🗑️
+          <Trash2 size={18} />
         </button>
       </div>
     </div>

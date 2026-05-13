@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Pencil, Search } from 'lucide-react';
 import type { Exercise, MuscleGroup } from '../types';
 import { makeDefaultSets } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
@@ -104,10 +105,10 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
         {/* Tabs */}
         <div className="modal__tabs">
           <button className={`modal__tab ${tab === 'search' ? 'active' : ''}`} onClick={() => setTab('search')}>
-            🔍 Search API
+            <Search size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px' }} /> Search API
           </button>
           <button className={`modal__tab ${tab === 'manual' ? 'active' : ''}`} onClick={() => setTab('manual')}>
-            ✏️ Manual Entry
+            <Pencil size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px' }} /> Manual Entry
           </button>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
 import { supabase } from '../lib/supabase';
@@ -176,8 +177,12 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
             ✓
           </button>
           <button className="ec__ic" title="Rename"
-            onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>✏️</button>
-          <button className="ec__ic ec__ic--del" title="Delete" onClick={() => onRemove(ex.id)}>🗑️</button>
+            onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>
+            <Pencil size={18} />
+          </button>
+          <button className="ec__ic ec__ic--del" title="Delete" onClick={() => onRemove(ex.id)}>
+            <Trash2 size={18} />
+          </button>
           <span className={`ec__chev ${expanded ? 'open' : ''}`}
             onClick={() => setExpanded(v => !v)}>›</span>
         </div>
@@ -235,7 +240,12 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
           )}
 
           <div className="ec__img-footer">
-            {hasImage && <button className="ec__ghost-btn" onClick={clearImage}>🗑 Remove image</button>}
+            {hasImage && (
+              <button className="ec__ghost-btn" onClick={clearImage}>
+                <Trash2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                Remove image
+              </button>
+            )}
             <button className="ec__ghost-btn" onClick={() => setShowImgForm(false)}>Cancel</button>
           </div>
         </div>
