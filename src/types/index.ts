@@ -10,17 +10,22 @@ export type MuscleGroup =
   | 'Cardio'
   | 'Rest';
 
-// Matches Supabase `routines` table columns
+export interface SetEntry {
+  id: string;
+  reps: string;
+  weight: string;
+  completed: boolean;
+}
+
 export interface Routine {
   id: string;
-  day: string;          // 'Monday' … 'Sunday'
-  day_index: number;    // 0 = Monday, 6 = Sunday
+  day: string;
+  day_index: number;
   muscle_group: MuscleGroup;
   notes: string;
   completed: boolean;
 }
 
-// Matches Supabase `exercises` table columns
 export interface Exercise {
   id: string;
   routine_id: string;
@@ -29,4 +34,20 @@ export interface Exercise {
   reps: string;
   weight: string;
   order_index: number;
+  set_data: SetEntry[];
+  exercise_type: string;
+  image_url: string;
+}
+
+export function makeDefaultSets(
+  count: number,
+  reps: string,
+  weight: string,
+): SetEntry[] {
+  return Array.from({ length: Math.max(count, 1) }, (_, i) => ({
+    id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+    reps,
+    weight,
+    completed: false,
+  }));
 }

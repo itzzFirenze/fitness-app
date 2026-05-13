@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Exercise, MuscleGroup } from '../types';
+import { makeDefaultSets } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
 import './ExerciseSearchModal.css';
 
@@ -66,7 +67,14 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
   const handleConfirmApi = async () => {
     if (!selected) return;
     setSaving(true);
-    await onAdd({ routine_id: routineId, name: selected.name, ...details });
+    await onAdd({
+      routine_id:    routineId,
+      name:          selected.name,
+      exercise_type: selected.type,
+      image_url:     '',
+      set_data:      makeDefaultSets(details.sets, details.reps, details.weight),
+      ...details,
+    });
     setSaving(false);
     setSelected(null);
   };
@@ -74,7 +82,13 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
   const handleManualAdd = async () => {
     if (!manual.name.trim()) return;
     setSaving(true);
-    await onAdd({ routine_id: routineId, ...manual });
+    await onAdd({
+      routine_id:    routineId,
+      exercise_type: 'strength',
+      image_url:     '',
+      set_data:      makeDefaultSets(manual.sets, manual.reps, manual.weight),
+      ...manual,
+    });
     setSaving(false);
     setManual({ name: '', sets: 3, reps: '10', weight: '' });
   };
