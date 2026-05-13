@@ -3,36 +3,36 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
   transition: background 0.2s;
   gap: 12px;
 }
 
 .ex-row:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
 }
 
 .ex-row--editing {
   flex-direction: column;
   align-items: stretch;
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: var(--surface-2);
+  border-color: var(--accent-border);
 }
 
 .ex-main {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
   min-width: 0;
 }
 
 .ex-name {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -45,18 +45,18 @@
 }
 
 .ex-chip {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 2px 10px;
+  padding: 2px 9px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  letter-spacing: 0.3px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  letter-spacing: 0.2px;
 }
 
 .ex-chip--weight {
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .ex-actions {
@@ -70,28 +70,28 @@
   border: none;
   cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: 7px;
   font-size: 1rem;
-  transition: background 0.15s, transform 0.1s, color 0.15s;
+  transition: background 0.15s, color 0.15s;
   line-height: 1;
-  color: #94a3b8;
+  color: var(--text-3);
 }
 
 .ex-btn:hover {
-  transform: scale(1.15);
+  color: var(--text-2);
 }
 
 .ex-btn--edit:hover {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
+  background: rgba(91, 138, 245, 0.1);
+  color: var(--accent);
 }
 
 .ex-btn--delete:hover {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--red);
 }
 
-/* Edit mode */
+/* ── Edit mode ───────────────────────────────────────────── */
 .ex-edit-grid {
   display: grid;
   grid-template-columns: 1fr 80px 100px 110px;
@@ -111,19 +111,19 @@
 }
 
 .ex-field label {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .ex-field input {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
-  color: #f1f5f9;
+  color: var(--text-1);
   font-size: 0.88rem;
   outline: none;
   transition: border-color 0.2s;
@@ -131,7 +131,7 @@
 }
 
 .ex-field input:focus {
-  border-color: #6366f1;
+  border-color: var(--accent-border);
 }
 
 .ex-edit-actions {
@@ -142,28 +142,27 @@
 }
 
 .btn-save {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: var(--accent);
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 20px;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: opacity 0.2s;
   font-family: inherit;
 }
 
 .btn-save:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 0.85;
 }
 
 .btn-cancel {
-  background: rgba(255, 255, 255, 0.07);
-  color: #94a3b8;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 8px 16px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -173,5 +172,5 @@
 }
 
 .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--surface);
 }

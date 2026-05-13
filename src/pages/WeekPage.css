@@ -1,273 +1,246 @@
-/* Shared app shell (blobs, font) */
+/* ── App shell ──────────────────────────────────────────── */
 .app {
-   min-height: 100dvh;
-   background: #060b14;
-   color: #f1f5f9;
-   font-family: 'Inter', -apple-system, sans-serif;
-   position: relative;
-   overflow-x: hidden;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'Ageo', -apple-system, sans-serif;
+  position: relative;
 }
 
-.bg-blob {
-   position: fixed;
-   border-radius: 50%;
-   filter: blur(120px);
-   pointer-events: none;
-   z-index: 0;
-   opacity: 0.5;
-}
-
-.bg-blob--1 {
-   width: 500px;
-   height: 500px;
-   background: radial-gradient(circle, #6366f133 0%, transparent 70%);
-   top: -150px;
-   right: -100px;
-}
-
-.bg-blob--2 {
-   width: 400px;
-   height: 400px;
-   background: radial-gradient(circle, #8b5cf622 0%, transparent 70%);
-   bottom: 100px;
-   left: -150px;
-}
+/* No .bg-blob — removed intentionally */
 
 .wp {
-   position: relative;
-   z-index: 1;
-   max-width: 520px;
-   margin: 0 auto;
-   padding: 24px 16px 60px;
-   display: flex;
-   flex-direction: column;
-   gap: 18px;
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 16px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* Header */
+/* ── Header ─────────────────────────────────────────────── */
 .wp__header {
-   display: flex;
-   flex-direction: column;
-   gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .wp__logo {
-   display: flex;
-   align-items: center;
-   gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .logo-icon {
-   font-size: 1.8rem;
-   filter: drop-shadow(0 0 8px #6366f1aa);
+  font-size: 1.6rem;
+  line-height: 1;
 }
 
 .logo-text {
-   font-size: 1.6rem;
-   font-weight: 900;
-   letter-spacing: -0.5px;
-   background: linear-gradient(135deg, #a5b4fc, #818cf8, #c084fc);
-   -webkit-background-clip: text;
-   -webkit-text-fill-color: transparent;
-   background-clip: text;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-1);
 }
 
 .wp__sub {
-   font-size: 0.8rem;
-   color: #475569;
+  font-size: 0.78rem;
+  color: var(--text-3);
 }
 
+/* ── Today card ─────────────────────────────────────────── */
 .wp__today-card {
-   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08));
-   border: 1px solid rgba(99, 102, 241, 0.25);
-   border-radius: 20px;
-   padding: 18px 20px;
-   backdrop-filter: blur(12px);
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   cursor: pointer;
-   transition: border-color 0.2s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .wp__today-card:hover {
-   border-color: rgba(99, 102, 241, 0.5);
+  border-color: var(--accent-border);
+  background: var(--surface-2);
 }
 
 .wp__today-label {
-   font-size: 0.7rem;
-   font-weight: 700;
-   color: #6366f1;
-   text-transform: uppercase;
-   letter-spacing: 1px;
-   margin-bottom: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 4px;
 }
 
 .wp__today-workout {
-   font-size: 1.4rem;
-   font-weight: 800;
-   color: #f1f5f9;
-   letter-spacing: -0.3px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: -0.2px;
 }
 
-/* Progress ring */
+/* ── Progress ring ──────────────────────────────────────── */
 .wp__ring-wrap {
-   position: relative;
-   width: 56px;
-   height: 56px;
-   flex-shrink: 0;
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
 }
 
 .wp__ring {
-   width: 56px;
-   height: 56px;
-   transform: rotate(-90deg);
+  width: 52px;
+  height: 52px;
+  transform: rotate(-90deg);
 }
 
 .ring-track {
-   fill: none;
-   stroke: rgba(255, 255, 255, 0.06);
-   stroke-width: 3;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 3;
 }
 
 .ring-fill {
-   fill: none;
-   stroke: #6366f1;
-   stroke-width: 3;
-   stroke-linecap: round;
-   transition: stroke-dashoffset 0.6s ease;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
 }
 
 .ring-label {
-   position: absolute;
-   inset: 0;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .ring-pct {
-   font-size: 0.72rem;
-   font-weight: 800;
-   color: #a5b4fc;
-   line-height: 1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1;
 }
 
 .ring-sub {
-   font-size: 0.48rem;
-   color: #475569;
-   font-weight: 600;
+  font-size: 0.46rem;
+  color: var(--text-3);
+  font-weight: 600;
 }
 
+/* ── Progress bar ───────────────────────────────────────── */
 .wp__progress-row {
-   display: flex;
-   align-items: center;
-   gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .wp__bar {
-   flex: 1;
-   height: 5px;
-   background: rgba(255, 255, 255, 0.07);
-   border-radius: 999px;
-   overflow: hidden;
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .wp__bar-fill {
-   height: 100%;
-   background: linear-gradient(90deg, #6366f1, #8b5cf6, #c084fc);
-   border-radius: 999px;
-   transition: width 0.6s ease;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.6s ease;
 }
 
 .wp__progress-text {
-   font-size: 0.72rem;
-   color: #475569;
-   white-space: nowrap;
-   font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-weight: 600;
 }
 
+/* ── Day list ───────────────────────────────────────────── */
 .wp__list {
-   display: flex;
-   flex-direction: column;
-   gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .wp__empty {
-   text-align: center;
-   color: #475569;
-   font-size: 0.9rem;
-   padding: 40px 0;
-   line-height: 2;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.88rem;
+  padding: 48px 0;
+  line-height: 2.2;
 }
 
 .wp__footer {
-   text-align: center;
+  text-align: center;
 }
 
 .wp__footer p {
-   font-size: 0.72rem;
-   color: #1e293b;
+  font-size: 0.7rem;
+  color: var(--text-3);
 }
 
-/* Loading / error */
+/* ── Loading / error ─────────────────────────────────────── */
 .wp-loading {
-   min-height: 100dvh;
-   background: #060b14;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   gap: 14px;
-   color: #475569;
-   font-family: 'Inter', sans-serif;
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-3);
+  font-family: 'Ageo', sans-serif;
 }
 
 .spinner {
-   width: 36px;
-   height: 36px;
-   border-radius: 50%;
-   border: 3px solid rgba(99, 102, 241, 0.2);
-   border-top-color: #6366f1;
-   animation: spin 0.8s linear infinite;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+  border-top-color: var(--accent);
+  animation: spin 0.85s linear infinite;
 }
 
 @keyframes spin {
-   to {
-      transform: rotate(360deg);
-   }
+  to { transform: rotate(360deg); }
 }
 
 .wp-error {
-   min-height: 100dvh;
-   background: #060b14;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   gap: 10px;
-   color: #f87171;
-   font-family: 'Inter', sans-serif;
-   text-align: center;
-   padding: 24px;
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--red);
+  font-family: 'Ageo', sans-serif;
+  text-align: center;
+  padding: 24px;
 }
 
 .wp-error__sub {
-   font-size: 0.8rem;
-   color: #64748b;
+  font-size: 0.78rem;
+  color: var(--text-3);
 }
 
 .wp-error__hint {
-   font-size: 0.82rem;
-   color: #475569;
-   max-width: 340px;
-   line-height: 1.7;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  max-width: 340px;
+  line-height: 1.7;
 }
 
 .wp-error__hint code {
-   background: rgba(255, 255, 255, 0.07);
-   padding: 1px 6px;
-   border-radius: 4px;
-   color: #a5b4fc;
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent);
 }

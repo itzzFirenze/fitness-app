@@ -1,42 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.cdnfonts.com/css/ageo');
+
+/* ── Design tokens ─────────────────────────────────────── */
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface-2: #1a1a1a;
+  --border:    rgba(255, 255, 255, 0.08);
+  --border-2:  rgba(255, 255, 255, 0.04);
+  --text-1:    #f0f0f0;
+  --text-2:    #888888;
+  --text-3:    #555555;
+  --accent:    #5b8af5;
+  --accent-dim: rgba(91, 138, 245, 0.12);
+  --accent-border: rgba(91, 138, 245, 0.35);
+  --green:     #3ecf8e;
+  --green-dim: rgba(62, 207, 142, 0.12);
+  --red:       #f87171;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
 
 *,
 *::before,
 *::after {
-   box-sizing: border-box;
-   margin: 0;
-   padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
 body,
 #root {
-   height: 100%;
-   -webkit-tap-highlight-color: transparent;
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-   background: #060b14;
-   color: #f1f5f9;
-   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-   -webkit-font-smoothing: antialiased;
-   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'Ageo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-   width: 4px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-   background: transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-   background: rgba(255, 255, 255, 0.1);
-   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
 }
 
 button {
-   -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent;
 }

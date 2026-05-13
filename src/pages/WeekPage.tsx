@@ -52,15 +52,12 @@ export default function WeekPage() {
 
    return (
       <div className="app">
-         <div className="bg-blob bg-blob--1" />
-         <div className="bg-blob bg-blob--2" />
-
          <div className="wp">
             {/* Header */}
             <header className="wp__header">
                <div className="wp__logo">
-                  <span className="logo-icon">⚡</span>
-                  <span className="logo-text">FitTrack</span>
+                  <img src="/apex_fitness.png" alt="Logo" height={40} width={40} />
+                  <span className="logo-text">Apex Fitness</span>
                </div>
                <p className="wp__sub">Your weekly workout planner</p>
 
