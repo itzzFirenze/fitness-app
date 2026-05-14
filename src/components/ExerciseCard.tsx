@@ -284,7 +284,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
               </div>
             ))}
           </div>
-          <button className="set-add-btn" onClick={addSet}>+ Add Set</button>
+          <button className="set-add-btn" onClick={addSet}><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Set</button>
         </div>
       )}
     </div>
