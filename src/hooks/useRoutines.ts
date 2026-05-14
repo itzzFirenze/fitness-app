@@ -22,6 +22,37 @@ export function useRoutines() {
     setLoading(true);
     setError(null);
 
+    // --- Weekly Reset Logic ---
+    try {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - d.getDay()); // Get most recent Sunday
+      const currentSunday = d.toISOString().split('T')[0];
+      const lastReset = localStorage.getItem('last_reset_sunday');
+
+      if (lastReset !== currentSunday) {
+        console.log('New week detected, resetting progress...');
+        // Reset routines
+        await supabase.from('routines').update({ completed: false }).gte('day_index', 0);
+        
+        // Reset all exercises' sets
+        const { data: exercises } = await supabase.from('exercises').select('id, set_data');
+        if (exercises) {
+          await Promise.all(exercises.map((ex: any) => {
+            if (Array.isArray(ex.set_data) && ex.set_data.length > 0) {
+              const newSetData = ex.set_data.map((s: any) => ({ ...s, completed: false }));
+              return supabase.from('exercises').update({ set_data: newSetData }).eq('id', ex.id);
+            }
+            return Promise.resolve();
+          }));
+        }
+        localStorage.setItem('last_reset_sunday', currentSunday);
+      }
+    } catch (err) {
+      console.error('Failed to perform weekly reset:', err);
+    }
+    // --------------------------
+
     const { data, error } = await supabase
       .from('routines')
       .select('*')
