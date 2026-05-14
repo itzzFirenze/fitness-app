@@ -23,34 +23,34 @@ export default function RoutinePage() {
 
    const [showModal, setShowModal] = useState(false);
    const [editingGroup, setEditingGroup] = useState(false);
-   
+
    // Drag and drop local state
    const [isReordering, setIsReordering] = useState(false);
    const [localExercises, setLocalExercises] = useState(exercises);
 
    // Sync local exercises when exercises change (only if not reordering)
    useEffect(() => {
-     if (!isReordering) {
-       setLocalExercises(exercises);
-     }
+      if (!isReordering) {
+         setLocalExercises(exercises);
+      }
    }, [exercises, isReordering]);
 
    const handleDragEnd = (result: DropResult) => {
-     if (!result.destination) return;
-     const items = Array.from(localExercises);
-     const [reorderedItem] = items.splice(result.source.index, 1);
-     items.splice(result.destination.index, 0, reorderedItem);
-     setLocalExercises(items);
+      if (!result.destination) return;
+      const items = Array.from(localExercises);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      setLocalExercises(items);
    };
 
    const handleSaveOrder = async () => {
-     await saveOrder(localExercises);
-     setIsReordering(false);
+      await saveOrder(localExercises);
+      setIsReordering(false);
    };
 
    const handleCancelOrder = () => {
-     setLocalExercises(exercises);
-     setIsReordering(false);
+      setLocalExercises(exercises);
+      setIsReordering(false);
    };
 
    // Auto-complete routine when all exercises are done

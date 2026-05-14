@@ -22,19 +22,33 @@ export function useRoutines() {
     setLoading(true);
     setError(null);
 
-    // --- Weekly Reset Logic ---
+    // --- Weekly Reset Logic (stored in Supabase so all devices share the same state) ---
     try {
       const d = new Date();
       d.setHours(0, 0, 0, 0);
       d.setDate(d.getDate() - d.getDay()); // Get most recent Sunday
       const currentSunday = d.toISOString().split('T')[0];
-      const lastReset = localStorage.getItem('last_reset_sunday');
+
+      // Read the last reset date from Supabase (shared across devices)
+      const { data: configRow } = await supabase
+        .from('app_config')
+        .select('value')
+        .eq('key', 'last_reset_sunday')
+        .maybeSingle();
+
+      const lastReset = configRow?.value ?? '';
 
       if (lastReset !== currentSunday) {
         console.log('New week detected, resetting progress...');
+
+        // Mark the new week FIRST so a concurrent device doesn't double-reset
+        await supabase
+          .from('app_config')
+          .upsert({ key: 'last_reset_sunday', value: currentSunday });
+
         // Reset routines
         await supabase.from('routines').update({ completed: false }).gte('day_index', 0);
-        
+
         // Reset all exercises' sets
         const { data: exercises } = await supabase.from('exercises').select('id, set_data');
         if (exercises) {
@@ -46,7 +60,6 @@ export function useRoutines() {
             return Promise.resolve();
           }));
         }
-        localStorage.setItem('last_reset_sunday', currentSunday);
       }
     } catch (err) {
       console.error('Failed to perform weekly reset:', err);
