@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Menu } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,10 @@ interface Props {
   muscleGroup: string;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onRemove: (id: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isReordering?: boolean;
+  dragHandleProps?: any;
 }
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
@@ -36,7 +40,7 @@ function uid() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove }: Props) {
+export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, onMoveUp, onMoveDown, isReordering, dragHandleProps }: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [editingName,  setEditingName]  = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
@@ -139,9 +143,9 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
         {/* Avatar — click to open image picker */}
         <button
           className="ec__avatar"
-          style={{ background: hasImage ? 'transparent' : cfg.bg }}
-          onClick={() => { setShowImgForm(v => !v); setExpanded(true); }}
-          title="Add / change image"
+          style={{ background: hasImage ? 'transparent' : cfg.bg, cursor: isReordering ? 'default' : 'pointer' }}
+          onClick={() => { if (!isReordering) { setShowImgForm(v => !v); setExpanded(true); } }}
+          title={isReordering ? '' : 'Add / change image'}
         >
           {hasImage
             ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
@@ -152,7 +156,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
         </button>
 
         {/* Name + meta */}
-        <div className="ec__info" onClick={() => setExpanded(v => !v)}>
+        <div className="ec__info" onClick={() => !isReordering && setExpanded(v => !v)} style={{ cursor: isReordering ? 'default' : 'pointer' }}>
           {editingName ? (
             <input
               className="ec__name-edit"
@@ -173,19 +177,27 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
 
         {/* Icons */}
         <div className="ec__actions">
-          <button className="ec__ic" title="Mark complete" onClick={e => { e.stopPropagation(); toggleAllSets(); }}
-            style={{ color: allCompleted ? '#4ade80' : 'rgba(255, 255, 255, 0.2)' }}>
-            ✓
-          </button>
-          <button className="ec__ic" title="Rename"
-            onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>
-            <Pencil size={18} />
-          </button>
-          <button className="ec__ic ec__ic--del" title="Delete" onClick={() => onRemove(ex.id)}>
-            <Trash2 size={18} />
-          </button>
-          <span className={`ec__chev ${expanded ? 'open' : ''}`}
-            onClick={() => setExpanded(v => !v)}>›</span>
+          {isReordering ? (
+            <div className="ec__drag-handle" {...dragHandleProps} style={{ cursor: 'grab', padding: '8px', color: 'var(--text-3)' }}>
+              <Menu size={20} />
+            </div>
+          ) : (
+            <>
+              <button className="ec__ic" title="Mark complete" onClick={e => { e.stopPropagation(); toggleAllSets(); }}
+                style={{ color: allCompleted ? '#4ade80' : 'rgba(255, 255, 255, 0.2)' }}>
+                ✓
+              </button>
+              <button className="ec__ic" title="Rename"
+                onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>
+                <Pencil size={18} />
+              </button>
+              <button className="ec__ic ec__ic--del" title="Delete" onClick={e => { e.stopPropagation(); onRemove(ex.id); }}>
+                <Trash2 size={18} />
+              </button>
+              <span className={`ec__chev ${expanded ? 'open' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}>›</span>
+            </>
+          )}
         </div>
       </div>
 

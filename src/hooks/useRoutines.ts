@@ -67,7 +67,7 @@ export function useRoutines() {
   const setNotes = (r: Routine, notes: string) =>
     updateRoutine(r.id, { notes });
 
-  return { routines, loading, error, refetch: load, toggleComplete, setMuscleGroup, setNotes };
+  return { routines, loading, error, refetch: load, toggleComplete, setMuscleGroup, setNotes, updateRoutine };
 }
 
 /* ── Exercises for one routine ───────────────────────────── */
@@ -109,5 +109,41 @@ export function useExercises(routineId: string | undefined) {
     setExercises(p => p.map(e => e.id === id ? { ...e, ...patch } : e));
   };
 
-  return { exercises, loading, add, remove, update };
+  const reorder = async (index: number, direction: 'up' | 'down') => {
+    // Legacy up/down reorder... (keep for fallback)
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === exercises.length - 1) return;
+
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    const newEx = [...exercises];
+    
+    // Swap items
+    const temp = newEx[index];
+    newEx[index] = newEx[swapIndex];
+    newEx[swapIndex] = temp;
+    
+    // Reassign order_index for safety
+    newEx.forEach((ex, i) => { ex.order_index = i; });
+    
+    setExercises(newEx);
+    
+    // Update DB
+    await Promise.all([
+      supabase.from('exercises').update({ order_index: newEx[index].order_index }).eq('id', newEx[index].id),
+      supabase.from('exercises').update({ order_index: newEx[swapIndex].order_index }).eq('id', newEx[swapIndex].id)
+    ]);
+  };
+
+  const saveOrder = async (reorderedExercises: Exercise[]) => {
+    // Update local state first
+    const updated = reorderedExercises.map((ex, i) => ({ ...ex, order_index: i }));
+    setExercises(updated);
+    
+    // Batch update DB
+    await Promise.all(
+      updated.map(ex => supabase.from('exercises').update({ order_index: ex.order_index }).eq('id', ex.id))
+    );
+  };
+
+  return { exercises, loading, add, remove, update, reorder, saveOrder };
 }

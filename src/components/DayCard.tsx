@@ -27,13 +27,11 @@ export default function DayCard({ routine, isToday, onToggle }: Props) {
 
          <div className="dc__right">
             {!isRest && (
-               <button
+               <div
                   className={`dc__check ${routine.completed ? 'dc__check--done' : ''}`}
-                  onClick={e => { e.stopPropagation(); onToggle(); }}
-                  title={routine.completed ? 'Mark incomplete' : 'Mark complete'}
                >
                   {routine.completed ? '✓' : '○'}
-               </button>
+               </div>
             )}
             <span className="dc__arrow">›</span>
          </div>
