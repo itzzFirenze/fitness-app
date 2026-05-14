@@ -1,4 +1,9 @@
-@import url('https://fonts.cdnfonts.com/css/ageo');
+@font-face {
+  font-family: 'Ageo';
+  src: url('/fonts/AgeoTrial-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 /* ── Design tokens ─────────────────────────────────────── */
 :root {

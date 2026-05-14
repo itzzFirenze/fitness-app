@@ -179,7 +179,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                   </div>
                 </div>
                 <button className="btn-add-big" disabled={saving} onClick={handleConfirmApi}>
-                  {saving ? 'Adding…' : '+ Add to Routine'}
+                  {saving ? 'Adding…' : <><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add to Routine</>}
                 </button>
               </div>
             ) : (
@@ -263,7 +263,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
               </div>
             </div>
             <button className="btn-add-big" disabled={saving || !manual.name.trim()} onClick={handleManualAdd}>
-              {saving ? 'Adding…' : '+ Add Exercise'}
+              {saving ? 'Adding…' : <><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Exercise</>}
             </button>
           </div>
         )}

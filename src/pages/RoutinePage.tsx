@@ -174,7 +174,7 @@ export default function RoutinePage() {
 
                   {!isReordering && (
                      <button className="rp__add-btn" onClick={() => setShowModal(true)}>
-                        + Add Exercise
+                        <span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Exercise
                      </button>
                   )}
                </>

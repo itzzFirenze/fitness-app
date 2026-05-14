@@ -116,10 +116,6 @@ export default function WeekPage() {
                   />
                ))}
             </main>
-
-            <footer className="wp__footer">
-               <p>Stay consistent · Stay strong ⚡</p>
-            </footer>
          </div>
       </div>
    );

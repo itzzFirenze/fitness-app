@@ -125,6 +125,7 @@
   font-weight: 700;
   color: var(--text-1);
   line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .ring-sub {
@@ -160,6 +161,7 @@
   color: var(--text-3);
   white-space: nowrap;
   font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* ── Day list ───────────────────────────────────────────── */
