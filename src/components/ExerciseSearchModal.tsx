@@ -3,6 +3,7 @@ import { Pencil, Search } from 'lucide-react';
 import type { Exercise, MuscleGroup } from '../types';
 import { makeDefaultSets } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
+import SecureImage from './SecureImage';
 import './ExerciseSearchModal.css';
 
 interface Props {
@@ -14,16 +15,15 @@ interface Props {
 
 type Tab = 'search' | 'manual';
 
-
-
 export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onClose }: Props) {
-  const [tab,         setTab]         = useState<Tab>('search');
-  const [query,       setQuery]       = useState('');
-  const [results,     setResults]     = useState<ApiExercise[]>([]);
-  const [searching,   setSearching]   = useState(false);
-  const [apiError,    setApiError]    = useState('');
-  const [selected,    setSelected]    = useState<ApiExercise | null>(null);
-  const [saving,      setSaving]      = useState(false);
+  const [tab,       setTab]       = useState<Tab>('search');
+  const [query,     setQuery]     = useState('');
+  const [results,   setResults]   = useState<ApiExercise[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [apiError,  setApiError]  = useState('');
+  const [selected,  setSelected]  = useState<ApiExercise | null>(null);
+  const [saving,    setSaving]    = useState(false);
+  const [gifLoaded, setGifLoaded] = useState(false);
 
   // Manual form
   const [manual, setManual] = useState({ name: '', sets: 3, reps: '10', weight: '' });
@@ -62,6 +62,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
 
   const handleSelect = (ex: ApiExercise) => {
     setSelected(ex);
+    setGifLoaded(false);
     setDetails({ sets: 3, reps: '10', weight: '' });
   };
 
@@ -71,8 +72,8 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
     await onAdd({
       routine_id:    routineId,
       name:          selected.name,
-      exercise_type: selected.type,
-      image_url:     '',
+      exercise_type: selected.bodyPart,
+      image_url:     selected.gifUrl ?? '',
       set_data:      makeDefaultSets(details.sets, details.reps, details.weight),
       ...details,
     });
@@ -105,7 +106,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
         {/* Tabs */}
         <div className="modal__tabs">
           <button className={`modal__tab ${tab === 'search' ? 'active' : ''}`} onClick={() => setTab('search')}>
-            <Search size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px' }} /> Search API
+            <Search size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px' }} /> Search
           </button>
           <button className={`modal__tab ${tab === 'manual' ? 'active' : ''}`} onClick={() => setTab('manual')}>
             <Pencil size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px' }} /> Manual Entry
@@ -116,16 +117,50 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
         {tab === 'search' && (
           <div className="modal__body">
             {selected ? (
-              /* Confirm form after selecting an exercise */
+              /* ── Confirm form: shows GIF + details ── */
               <div className="confirm-form">
                 <div className="confirm-header">
                   <button className="back-btn" onClick={() => setSelected(null)}>← Back</button>
                   <h3>{selected.name}</h3>
-                  <span className="api-tag">{selected.muscle} · {selected.difficulty}</span>
                 </div>
-                {selected.instructions && (
-                  <p className="instructions">{selected.instructions.slice(0, 180)}…</p>
+
+                {/* GIF preview */}
+                <div className="gif-preview">
+                  {!gifLoaded && (
+                    <div className="gif-skeleton">
+                      <span className="gif-skeleton__text">Loading GIF…</span>
+                    </div>
+                  )}
+                  <SecureImage
+                    src={selected.gifUrl}
+                    alt={selected.name}
+                    className="gif-img"
+                    style={{ display: gifLoaded ? 'block' : 'none' }}
+                    onLoad={() => setGifLoaded(true)}
+                  />
+                </div>
+
+                {/* Muscle badges */}
+                <div className="muscle-badges">
+                  <span className="muscle-badge muscle-badge--primary">
+                    🎯 {selected.target}
+                  </span>
+                  {selected.secondaryMuscles?.slice(0, 3).map(m => (
+                    <span key={m} className="muscle-badge muscle-badge--secondary">{m}</span>
+                  ))}
+                  <span className="muscle-badge muscle-badge--equip">
+                    🏋️ {selected.equipment}
+                  </span>
+                </div>
+
+                {/* Instructions snippet */}
+                {selected.instructions?.length > 0 && (
+                  <p className="instructions">
+                    {selected.instructions[0].slice(0, 200)}
+                    {selected.instructions[0].length > 200 ? '…' : ''}
+                  </p>
                 )}
+
                 <div className="detail-grid">
                   <div className="ec-field">
                     <label>Sets</label>
@@ -156,16 +191,17 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                   onChange={e => handleQueryChange(e.target.value)}
                   autoFocus
                 />
-                {/* Quick muscle filter chips */}
+
+                {/* Body-part filter chips */}
                 <div className="muscle-chips">
                   {(MUSCLE_MAP[muscleGroup] ?? []).map(m => (
                     <button key={m} className="muscle-chip" onClick={() => searchApi('', m)}>
-                      {m.replace('_', ' ')}
+                      {m}
                     </button>
                   ))}
                 </div>
 
-                {apiError && <p className="api-error">⚠️ {apiError} — check your API key in .env</p>}
+                {apiError && <p className="api-error">⚠️ {apiError}</p>}
 
                 {searching ? (
                   <div className="search-loading">Searching…</div>
@@ -174,12 +210,18 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                 ) : (
                   <div className="results-list">
                     {results.map(ex => (
-                      <div key={ex.name} className="result-item" onClick={() => handleSelect(ex)}>
-                        <div className="result-item__name">{ex.name}</div>
-                        <div className="result-item__meta">
-                          <span>{ex.muscle}</span>
-                          <span>{ex.equipment}</span>
-                          <span className={`diff diff--${ex.difficulty}`}>{ex.difficulty}</span>
+                      <div key={ex.id} className="result-item" onClick={() => handleSelect(ex)}>
+                        {/* Thumbnail GIF */}
+                        <div className="result-item__thumb">
+                          <SecureImage src={ex.gifUrl} alt={ex.name} loading="lazy" />
+                        </div>
+                        <div className="result-item__info">
+                          <div className="result-item__name">{ex.name}</div>
+                          <div className="result-item__meta">
+                            <span className="ri-tag ri-tag--target">🎯 {ex.target}</span>
+                            <span className="ri-tag">🏋️ {ex.equipment}</span>
+                            <span className="ri-tag ri-tag--body">{ex.bodyPart}</span>
+                          </div>
                         </div>
                       </div>
                     ))}

@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
 import { supabase } from '../lib/supabase';
+import SecureImage from './SecureImage';
 import './ExerciseCard.css';
 
 interface Props {
@@ -143,8 +144,8 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
           title="Add / change image"
         >
           {hasImage
-            ? <img src={ex.image_url} alt={ex.name} className="ec__avatar-img"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             : <span className="ec__avatar-icon">{cfg.icon}</span>
           }
           <span className="ec__avatar-overlay">🖼️</span>

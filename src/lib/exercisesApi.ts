@@ -1,55 +1,75 @@
 export interface ApiExercise {
-   name: string;
-   type: string;
-   muscle: string;
-   equipment: string;
-   difficulty: string;
-   instructions: string;
+  id: string;
+  name: string;
+  bodyPart: string;
+  target: string;
+  secondaryMuscles: string[];
+  equipment: string;
+  gifUrl: string;
+  instructions: string[];
 }
 
-// Maps our muscle groups → API Ninjas muscle param values
+// Maps our muscle groups → WorkoutX bodyPart / target values
+// WorkoutX bodyPart values: back, chest, lower arms, lower legs, neck,
+//   shoulders, upper arms, upper legs, waist, cardio
 export const MUSCLE_MAP: Record<string, string[]> = {
-   Back: ['lats', 'middle_back', 'lower_back'],
-   Chest: ['chest'],
-   Biceps: ['biceps'],
-   Triceps: ['triceps'],
-   Shoulders: ['traps'],
-   Arms: ['biceps', 'triceps', 'forearms'],
-   Legs: ['quadriceps', 'hamstrings', 'glutes', 'calves'],
-   Core: ['abdominals'],
-   Cardio: [],
-   Rest: [],
+  Back:      ['back'],
+  Chest:     ['chest'],
+  Biceps:    ['biceps'],
+  Triceps:   ['triceps'],
+  Shoulders: ['shoulders'],
+  Arms:      ['upper arms', 'lower arms'],
+  Legs:      ['upper legs', 'lower legs'],
+  Core:      ['waist'],
+  Cardio:    ['cardio'],
+  Rest:      [],
 };
 
-const BASE = 'https://api.api-ninjas.com/v1/exercises';
-const KEY = import.meta.env.VITE_API_NINJAS_KEY as string;
+const BASE = 'https://api.workoutxapp.com/v1';
+const KEY  = import.meta.env.VITE_API_WORKOUTX as string;
 
 const STATUS_MESSAGES: Record<number, string> = {
-   400: 'Invalid API key — go to api-ninjas.com → My Account and copy your key exactly into VITE_API_NINJAS_KEY in .env',
-   401: 'Unauthorized — your API Ninjas key is wrong. Check VITE_API_NINJAS_KEY in .env',
-   429: 'Rate limited — too many requests. Try again in a minute.',
+  401: 'Unauthorized — check VITE_API_WORKOUTX in your .env file.',
+  403: 'Forbidden — your WorkoutX API key may be invalid.',
+  429: 'Rate limited — too many requests. Try again in a moment.',
 };
 
+async function wxFetch(path: string): Promise<ApiExercise[]> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'X-WorkoutX-Key': KEY || '' },
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      STATUS_MESSAGES[res.status] ?? `WorkoutX error ${res.status}`
+    );
+  }
+
+  const json = await res.json();
+  // API may return { data: [...] } or a plain array
+  return Array.isArray(json) ? json : (json.data ?? []);
+}
+
 export async function fetchExercises(params: {
-   name?: string;
-   muscle?: string;
-   limit?: number;
+  name?: string;
+  muscle?: string; // a bodyPart string from MUSCLE_MAP
+  limit?: number;
 }): Promise<ApiExercise[]> {
-   // API Ninjas requires at least one filter parameter
-   if (!params.name && !params.muscle) return [];
+  const limit = params.limit ?? 20;
 
-   const q = new URLSearchParams();
-   if (params.name) q.set('name', params.name);
-   if (params.muscle) q.set('muscle', params.muscle);
-   q.set('limit', String(params.limit ?? 15));
+  // Name search
+  if (params.name) {
+    const encoded = encodeURIComponent(params.name.toLowerCase());
+    const q = new URLSearchParams({ limit: String(limit) });
+    return wxFetch(`/exercises/name/${encoded}?${q}`);
+  }
 
-   const res = await fetch(`${BASE}?${q}`, {
-      headers: { 'X-Api-Key': KEY || '' },
-   });
+  // Filter by body part
+  if (params.muscle) {
+    const encoded = encodeURIComponent(params.muscle);
+    const q = new URLSearchParams({ limit: String(limit) });
+    return wxFetch(`/exercises/bodyPart/${encoded}?${q}`);
+  }
 
-   if (!res.ok) {
-      throw new Error(STATUS_MESSAGES[res.status] ?? `API Ninjas error ${res.status}`);
-   }
-
-   return res.json();
+  return [];
 }
