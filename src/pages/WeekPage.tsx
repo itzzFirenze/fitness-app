@@ -13,7 +13,7 @@ function getTodayIndex() {
 
 export default function WeekPage() {
    const navigate = useNavigate();
-   const { routines, loading, error, toggleComplete } = useRoutines();
+   const { routines, loading, error } = useRoutines();
    const todayIndex = useMemo(() => getTodayIndex(), []);
 
    const done = routines.filter(r => r.muscle_group !== 'Rest' && r.completed).length;
@@ -113,7 +113,6 @@ export default function WeekPage() {
                      key={r.id}
                      routine={r}
                      isToday={i === todayIndex}
-                     onToggle={() => toggleComplete(r)}
                   />
                ))}
             </main>

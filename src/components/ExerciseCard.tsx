@@ -11,8 +11,6 @@ interface Props {
   muscleGroup: string;
   onUpdate: (id: string, patch: Partial<Exercise>) => void;
   onRemove: (id: string) => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
   isReordering?: boolean;
   dragHandleProps?: any;
 }
@@ -40,7 +38,7 @@ function uid() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, onMoveUp, onMoveDown, isReordering, dragHandleProps }: Props) {
+export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, isReordering, dragHandleProps }: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [editingName,  setEditingName]  = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);

@@ -6,10 +6,9 @@ import './DayCard.css';
 interface Props {
    routine: Routine;
    isToday: boolean;
-   onToggle: () => void;
 }
 
-export default function DayCard({ routine, isToday, onToggle }: Props) {
+export default function DayCard({ routine, isToday }: Props) {
    const navigate = useNavigate();
    const isRest = routine.muscle_group === 'Rest';
 
