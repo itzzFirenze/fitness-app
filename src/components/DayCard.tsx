@@ -19,16 +19,18 @@ export default function DayCard({ routine, isToday }: Props) {
          role="button"
       >
          <div className="dc__left">
-            {isToday && <span className="dc__today-pill">TODAY</span>}
+
             <span className="dc__day">{routine.day}</span>
             <MuscleGroupBadge group={routine.muscle_group} size="sm" />
          </div>
 
          <div className="dc__right">
+            {isToday && <span className="dc__today-pill">TODAY</span>}
             {!isRest && (
                <div
                   className={`dc__check ${routine.completed ? 'dc__check--done' : ''}`}
                >
+
                   {routine.completed ? '✓' : '○'}
                </div>
             )}
