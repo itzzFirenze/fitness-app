@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, Menu } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
@@ -47,8 +47,16 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
   const [imgDraft,     setImgDraft]     = useState(ex.image_url ?? '');
   const [uploading,    setUploading]    = useState(false);
   const [uploadError,  setUploadError]  = useState('');
+  const [enlargedImg,  setEnlargedImg]  = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
 
   const cfg       = typeConfig(ex.exercise_type);
   const sets      = getEffectiveSets(ex);
@@ -138,12 +146,42 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
       {/* Header */}
       <div className="ec__header">
 
-        {/* Avatar — click to open image picker */}
+        {/* Avatar — click to enlarge, hold to open image picker */}
         <button
           className="ec__avatar"
-          style={{ background: hasImage ? 'transparent' : cfg.bg, cursor: isReordering ? 'default' : 'pointer' }}
-          onClick={() => { if (!isReordering) { setShowImgForm(v => !v); setExpanded(true); } }}
-          title={isReordering ? '' : 'Add / change image'}
+          style={{ 
+            background: hasImage ? 'transparent' : cfg.bg, 
+            cursor: isReordering ? 'default' : 'pointer',
+            touchAction: 'none' /* prevent scrolling while holding */
+          }}
+          onPointerDown={(e) => {
+            if (isReordering || e.button !== 0) return;
+            longPressTimerRef.current = setTimeout(() => {
+              setShowImgForm(true);
+              setExpanded(true);
+              longPressTimerRef.current = null;
+            }, 500);
+          }}
+          onPointerUp={() => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+              if (hasImage && !isReordering) {
+                setEnlargedImg(ex.image_url ?? null);
+              }
+            }
+          }}
+          onPointerLeave={() => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+          }}
+          onContextMenu={(e) => {
+            // Prevent context menu on long press
+            e.preventDefault();
+          }}
+          title={isReordering ? '' : (hasImage ? 'Click to enlarge, hold to edit image' : 'Hold to add image')}
         >
           {hasImage
             ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
@@ -285,6 +323,13 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
             ))}
           </div>
           <button className="set-add-btn" onClick={addSet}><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Set</button>
+        </div>
+      )}
+
+      {/* Enlarged Modal */}
+      {enlargedImg && (
+        <div className="ec__enlarged-modal" onClick={() => setEnlargedImg(null)}>
+          <img src={enlargedImg} alt={ex.name} className="ec__enlarged-img" />
         </div>
       )}
     </div>

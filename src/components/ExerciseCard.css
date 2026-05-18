@@ -530,3 +530,30 @@
 .btn-ghost:hover {
   background: var(--surface);
 }
+
+/* ── Enlarged image modal ────────────────────────────────── */
+.ec__enlarged-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.15s ease;
+  cursor: zoom-out;
+}
+
+.ec__enlarged-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-lg);
+  object-fit: contain;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
