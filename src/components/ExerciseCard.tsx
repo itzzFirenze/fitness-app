@@ -50,7 +50,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
   const [enlargedImg,  setEnlargedImg]  = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
