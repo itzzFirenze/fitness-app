@@ -51,6 +51,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
 
   const fileRef = useRef<HTMLInputElement>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLongPressedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -156,7 +157,9 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
           }}
           onPointerDown={(e) => {
             if (isReordering || e.button !== 0) return;
+            hasLongPressedRef.current = false;
             longPressTimerRef.current = setTimeout(() => {
+              hasLongPressedRef.current = true;
               setShowImgForm(true);
               setExpanded(true);
               longPressTimerRef.current = null;
@@ -166,15 +169,29 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
             if (longPressTimerRef.current) {
               clearTimeout(longPressTimerRef.current);
               longPressTimerRef.current = null;
-              if (hasImage && !isReordering) {
-                setEnlargedImg(ex.image_url ?? null);
-              }
             }
           }}
           onPointerLeave={() => {
             if (longPressTimerRef.current) {
               clearTimeout(longPressTimerRef.current);
               longPressTimerRef.current = null;
+            }
+          }}
+          onPointerCancel={() => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+          }}
+          onClick={(e) => {
+            if (isReordering) return;
+            if (hasLongPressedRef.current) {
+              // It was a long press, do not trigger click
+              e.preventDefault();
+              return;
+            }
+            if (hasImage) {
+              setEnlargedImg(ex.image_url ?? null);
             }
           }}
           onContextMenu={(e) => {
