@@ -41,10 +41,14 @@ export function useRoutines() {
       if (lastReset !== currentSunday) {
         console.log('New week detected, resetting progress...');
 
-        // Mark the new week FIRST so a concurrent device doesn't double-reset
-        await supabase
-          .from('app_config')
-          .upsert({ key: 'last_reset_sunday', value: currentSunday });
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Mark the new week FIRST so a concurrent device doesn't double-reset
+          await supabase
+            .from('app_config')
+            .upsert({ user_id: user.id, key: 'last_reset_sunday', value: currentSunday });
+        }
 
         // Reset routines
         await supabase.from('routines').update({ completed: false }).gte('day_index', 0);
@@ -79,14 +83,26 @@ export function useRoutines() {
 
     // Auto-seed the 7 days on first run if the table is empty
     if (!data || data.length === 0) {
-      const { data: seeded, error: seedErr } = await supabase
-        .from('routines')
-        .insert(SEED_DAYS)
-        .select()
-        .order('day_index');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const seedWithUser = SEED_DAYS.map(d => ({ ...d, user_id: user.id }));
+        const { data: seeded, error: seedErr } = await supabase
+          .from('routines')
+          .upsert(seedWithUser, { onConflict: 'user_id,day', ignoreDuplicates: true })
+          .select()
+          .order('day_index');
 
-      if (seedErr) setError(`Auto-seed failed: ${seedErr.message}`);
-      else         setRoutines((seeded as Routine[]) ?? []);
+        if (seedErr) setError(`Auto-seed failed: ${seedErr.message}`);
+        else {
+          // If ignoreDuplicates triggered, the select might return empty, so fetch again just in case
+          if (!seeded || seeded.length === 0) {
+            const { data: refetched } = await supabase.from('routines').select('*').order('day_index');
+            setRoutines((refetched as Routine[]) ?? []);
+          } else {
+            setRoutines((seeded as Routine[]) ?? []);
+          }
+        }
+      }
     } else {
       setRoutines((data as Routine[]) ?? []);
     }

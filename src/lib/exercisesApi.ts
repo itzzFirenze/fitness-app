@@ -26,28 +26,58 @@ export const MUSCLE_MAP: Record<string, string[]> = {
 };
 
 const BASE = 'https://api.workoutxapp.com/v1';
-const KEY  = import.meta.env.VITE_API_WORKOUTX as string;
+
+// Gather all available keys from environment
+const KEYS = [
+  import.meta.env.VITE_API_WORKOUTX,
+  import.meta.env.VITE_API_WORKOUTX_BACKUP1,
+  import.meta.env.VITE_API_WORKOUTX_BACKUP2
+].filter(Boolean) as string[];
 
 const STATUS_MESSAGES: Record<number, string> = {
-  401: 'Unauthorized — check VITE_API_WORKOUTX in your .env file.',
-  403: 'Forbidden — your WorkoutX API key may be invalid.',
-  429: 'Rate limited — too many requests. Try again in a moment.',
+  401: 'Unauthorized — API key is invalid or expired.',
+  403: 'Forbidden — API key may be restricted or usage limit hit.',
+  429: 'Rate limited — all API keys have hit their usage limits.',
 };
 
 async function wxFetch(path: string): Promise<ApiExercise[]> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'X-WorkoutX-Key': KEY || '' },
-  });
-
-  if (!res.ok) {
-    throw new Error(
-      STATUS_MESSAGES[res.status] ?? `WorkoutX error ${res.status}`
-    );
+  if (KEYS.length === 0) {
+    throw new Error('No WorkoutX API keys configured in .env');
   }
 
-  const json = await res.json();
-  // API may return { data: [...] } or a plain array
-  return Array.isArray(json) ? json : (json.data ?? []);
+  let lastRes: Response | null = null;
+
+  // Try each key in sequence
+  for (const key of KEYS) {
+    // If it's a dummy placeholder, skip it
+    if (key.includes('placeholder')) continue;
+
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { 'X-WorkoutX-Key': key },
+    });
+
+    // If successful, break and return data
+    if (res.ok) {
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.data ?? []);
+    }
+
+    lastRes = res;
+    // If rate limited or unauthorized, try the next key
+    if (res.status === 429 || res.status === 403 || res.status === 401) {
+      console.warn(`WorkoutX API key failed with status ${res.status}, trying backup...`);
+      continue;
+    }
+
+    // For other errors (500, etc), break immediately
+    break;
+  }
+
+  if (lastRes) {
+    throw new Error(STATUS_MESSAGES[lastRes.status] ?? `WorkoutX error ${lastRes.status}`);
+  }
+
+  throw new Error('No valid WorkoutX API keys available.');
 }
 
 export async function fetchExercises(params: {

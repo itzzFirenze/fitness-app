@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Pencil, Search } from 'lucide-react';
 import type { Exercise, MuscleGroup } from '../types';
 import { makeDefaultSets } from '../types';
@@ -33,13 +33,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
 
    const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-   // Auto-load muscle group exercises on open
-   useEffect(() => {
-      const muscles = MUSCLE_MAP[muscleGroup] ?? [];
-      if (muscles.length === 0) return;
-      searchApi('', muscles[0]);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [muscleGroup]);
+   // Auto-load removed: only load when user explicitly searches
 
    const searchApi = async (name: string, muscle?: string) => {
       setSearching(true);
@@ -56,8 +50,16 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
 
    const handleQueryChange = (val: string) => {
       setQuery(val);
+      if (!val.trim()) {
+         // Optionally, could clear results if search is empty, but we'll leave it
+         // to only search if there's text.
+      }
       clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => searchApi(val), 600);
+      if (val.trim()) {
+         debounceRef.current = setTimeout(() => searchApi(val), 600);
+      } else {
+         setResults([]);
+      }
    };
 
    const handleSelect = (ex: ApiExercise) => {
@@ -179,14 +181,14 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                            </div>
                         </div>
                         <button className="btn-add-big" disabled={saving} onClick={handleConfirmApi}>
-                           {saving ? 'Adding…' : <><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add to Routine</>}
+                           {saving ? 'Adding…' : <>+ Add to Routine</>}
                         </button>
                      </div>
                   ) : (
                      <>
                         <input
                            className="search-input"
-                           placeholder={`Search exercises (showing ${muscleGroup} by default)…`}
+                           placeholder="Search exercises by name…"
                            value={query}
                            onChange={e => handleQueryChange(e.target.value)}
                            autoFocus
@@ -205,6 +207,8 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
 
                         {searching ? (
                            <div className="search-loading">Searching…</div>
+                        ) : results.length === 0 && !query.trim() ? (
+                           <p className="no-results">Type above or click a muscle group to find exercises.</p>
                         ) : results.length === 0 ? (
                            <p className="no-results">No results. Try a different search term.</p>
                         ) : (
@@ -237,7 +241,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                <div className="modal__body">
                   <div className="manual-grid">
                      <div className="ec-field span-full">
-                        <label>Exercise name <span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>*</span></label>
+                        <label>Exercise name *</label>
                         <input
                            autoFocus
                            value={manual.name}
@@ -263,7 +267,7 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
                      </div>
                   </div>
                   <button className="btn-add-big" disabled={saving || !manual.name.trim()} onClick={handleManualAdd}>
-                     {saving ? 'Adding…' : <><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Exercise</>}
+                     {saving ? 'Adding…' : <>+ Add Exercise</>}
                   </button>
                </div>
             )}

@@ -106,7 +106,7 @@ export default function RoutinePage() {
                               <button onClick={handleSaveOrder} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Save</button>
                            </>
                         ) : (
-                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Reorder</button>
+                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Edit</button>
                         )}
                      </div>
                   )}
@@ -174,7 +174,7 @@ export default function RoutinePage() {
 
                   {!isReordering && (
                      <button className="rp__add-btn" onClick={() => setShowModal(true)}>
-                        <span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Exercise
+                        + Add Exercise
                      </button>
                   )}
                </>

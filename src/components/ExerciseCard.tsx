@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, Trash2, Menu } from 'lucide-react';
+import { Trash2, Menu } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
 import { supabase } from '../lib/supabase';
@@ -40,7 +40,6 @@ function uid() {
 
 export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, isReordering, dragHandleProps }: Props) {
   const [expanded,     setExpanded]     = useState(false);
-  const [editingName,  setEditingName]  = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
   const [showImgForm,  setShowImgForm]  = useState(false);
   const [imgTab,       setImgTab]       = useState<'file' | 'url'>('file');
@@ -50,14 +49,13 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
   const [enlargedImg,  setEnlargedImg]  = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasLongPressedRef = useRef(false);
 
+  // Close image form if Edit mode is turned off from the top bar
   useEffect(() => {
-    return () => {
-      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-    };
-  }, []);
+    if (!isReordering) {
+      setShowImgForm(false);
+    }
+  }, [isReordering]);
 
   const cfg       = typeConfig(ex.exercise_type);
   const sets      = getEffectiveSets(ex);
@@ -89,7 +87,6 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
   /* ── Name ────────────────────────────────────────────── */
   const saveName = () => {
     if (nameDraft.trim()) onUpdate(ex.id, { name: nameDraft.trim() });
-    setEditingName(false);
   };
 
   /* ── Image: file upload ──────────────────────────────── */
@@ -147,58 +144,22 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
       {/* Header */}
       <div className="ec__header">
 
-        {/* Avatar — click to enlarge, hold to open image picker */}
+        {/* Avatar — click to enlarge in view mode, click to edit image in edit mode */}
         <button
           className="ec__avatar"
           style={{ 
             background: hasImage ? 'transparent' : cfg.bg, 
-            cursor: isReordering ? 'default' : 'pointer',
-            touchAction: 'none' /* prevent scrolling while holding */
-          }}
-          onPointerDown={(e) => {
-            if (isReordering || e.button !== 0) return;
-            hasLongPressedRef.current = false;
-            longPressTimerRef.current = setTimeout(() => {
-              hasLongPressedRef.current = true;
-              setShowImgForm(true);
-              setExpanded(true);
-              longPressTimerRef.current = null;
-            }, 500);
-          }}
-          onPointerUp={() => {
-            if (longPressTimerRef.current) {
-              clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-            }
-          }}
-          onPointerLeave={() => {
-            if (longPressTimerRef.current) {
-              clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-            }
-          }}
-          onPointerCancel={() => {
-            if (longPressTimerRef.current) {
-              clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-            }
+            cursor: 'pointer'
           }}
           onClick={(e) => {
-            if (isReordering) return;
-            if (hasLongPressedRef.current) {
-              // It was a long press, do not trigger click
-              e.preventDefault();
-              return;
-            }
-            if (hasImage) {
+            e.preventDefault();
+            if (isReordering) {
+              setShowImgForm(true);
+            } else if (hasImage) {
               setEnlargedImg(ex.image_url ?? null);
             }
           }}
-          onContextMenu={(e) => {
-            // Prevent context menu on long press
-            e.preventDefault();
-          }}
-          title={isReordering ? '' : (hasImage ? 'Click to enlarge, hold to edit image' : 'Hold to add image')}
+          title={isReordering ? 'Click to change image' : (hasImage ? 'Click to enlarge' : '')}
         >
           {hasImage
             ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
@@ -210,11 +171,10 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
 
         {/* Name + meta */}
         <div className="ec__info" onClick={() => !isReordering && setExpanded(v => !v)} style={{ cursor: isReordering ? 'default' : 'pointer' }}>
-          {editingName ? (
+          {isReordering ? (
             <input
               className="ec__name-edit"
               value={nameDraft}
-              autoFocus
               onChange={e => setNameDraft(e.target.value)}
               onBlur={saveName}
               onKeyDown={e => e.key === 'Enter' && saveName()}
@@ -239,10 +199,6 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
               <button className="ec__ic" title="Mark complete" onClick={e => { e.stopPropagation(); toggleAllSets(); }}
                 style={{ color: allCompleted ? '#4ade80' : 'rgba(255, 255, 255, 0.2)' }}>
                 ✓
-              </button>
-              <button className="ec__ic" title="Rename"
-                onClick={e => { e.stopPropagation(); setEditingName(true); setExpanded(true); }}>
-                <Pencil size={18} />
               </button>
               <button className="ec__ic ec__ic--del" title="Delete" onClick={e => { e.stopPropagation(); onRemove(ex.id); }}>
                 <Trash2 size={18} />
@@ -339,7 +295,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
               </div>
             ))}
           </div>
-          <button className="set-add-btn" onClick={addSet}><span style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>+</span> Add Set</button>
+          <button className="set-add-btn" onClick={addSet}>+ Add Set</button>
         </div>
       )}
 
