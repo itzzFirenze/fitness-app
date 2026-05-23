@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Menu } from 'lucide-react';
+import { Trash2, Menu, RotateCcw } from 'lucide-react';
 import type { Exercise, SetEntry } from '../types';
 import { makeDefaultSets } from '../types';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ interface Props {
   onRemove: (id: string) => void;
   isReordering?: boolean;
   dragHandleProps?: any;
+  isPendingDelete?: boolean;
 }
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
@@ -38,7 +39,7 @@ function uid() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, isReordering, dragHandleProps }: Props) {
+export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, isReordering, dragHandleProps, isPendingDelete }: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
   const [showImgForm,  setShowImgForm]  = useState(false);
@@ -139,7 +140,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
 
   /* ── Render ──────────────────────────────────────────── */
   return (
-    <div className={`ec ${expanded ? 'ec--open' : ''}`}>
+    <div className={`ec ${expanded ? 'ec--open' : ''} ${isPendingDelete ? 'ec--pending-delete' : ''}`}>
 
       {/* Header */}
       <div className="ec__header">
@@ -191,17 +192,24 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
         {/* Icons */}
         <div className="ec__actions">
           {isReordering ? (
-            <div className="ec__drag-handle" {...dragHandleProps} style={{ cursor: 'grab', padding: '8px', color: 'var(--text-3)' }}>
-              <Menu size={20} />
-            </div>
+            <>
+              <button
+                className={`ec__ic ec__ic--del ${isPendingDelete ? 'ec__ic--undo' : ''}`}
+                title={isPendingDelete ? "Undo Delete" : "Delete"}
+                onClick={e => { e.stopPropagation(); onRemove(ex.id); }}
+                style={{ marginRight: '4px', color: isPendingDelete ? 'var(--accent)' : undefined }}
+              >
+                {isPendingDelete ? <RotateCcw size={18} /> : <Trash2 size={18} />}
+              </button>
+              <div className="ec__drag-handle" {...dragHandleProps} style={{ cursor: 'grab', padding: '8px', color: 'var(--text-3)' }}>
+                <Menu size={20} />
+              </div>
+            </>
           ) : (
             <>
               <button className="ec__ic" title="Mark complete" onClick={e => { e.stopPropagation(); toggleAllSets(); }}
                 style={{ color: allCompleted ? '#4ade80' : 'rgba(255, 255, 255, 0.2)' }}>
                 ✓
-              </button>
-              <button className="ec__ic ec__ic--del" title="Delete" onClick={e => { e.stopPropagation(); onRemove(ex.id); }}>
-                <Trash2 size={18} />
               </button>
               <span className={`ec__chev ${expanded ? 'open' : ''}`}
                 onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}>›</span>

@@ -7,6 +7,7 @@ import ExerciseCard from '../components/ExerciseCard';
 import ExerciseSearchModal from '../components/ExerciseSearchModal';
 import MuscleGroupBadge from '../components/MuscleGroupBadge';
 import type { MuscleGroup } from '../types';
+import { supabase } from '../lib/supabase';
 import './RoutinePage.css';
 
 const ALL_GROUPS: MuscleGroup[] = [
@@ -27,6 +28,7 @@ export default function RoutinePage() {
    // Drag and drop local state
    const [isReordering, setIsReordering] = useState(false);
    const [localExercises, setLocalExercises] = useState(exercises);
+   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
 
    // Sync local exercises when exercises change (only if not reordering)
    useEffect(() => {
@@ -43,13 +45,33 @@ export default function RoutinePage() {
       setLocalExercises(items);
    };
 
+   const togglePendingDelete = (id: string) => {
+      setPendingDeleteIds(prev => {
+         const next = new Set(prev);
+         if (next.has(id)) {
+            next.delete(id);
+         } else {
+            next.add(id);
+         }
+         return next;
+      });
+   };
+
    const handleSaveOrder = async () => {
-      await saveOrder(localExercises);
+      let remainingExercises = localExercises;
+      if (pendingDeleteIds.size > 0) {
+         const deleteIds = Array.from(pendingDeleteIds);
+         await supabase.from('exercises').delete().in('id', deleteIds);
+         remainingExercises = localExercises.filter(ex => !pendingDeleteIds.has(ex.id));
+      }
+      await saveOrder(remainingExercises);
+      setPendingDeleteIds(new Set());
       setIsReordering(false);
    };
 
    const handleCancelOrder = () => {
       setLocalExercises(exercises);
+      setPendingDeleteIds(new Set());
       setIsReordering(false);
    };
 
@@ -149,16 +171,17 @@ export default function RoutinePage() {
                               {(provided) => (
                                  <div {...provided.droppableProps} ref={provided.innerRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {localExercises.map((ex, index) => (
-                                       <Draggable key={ex.id} draggableId={ex.id} index={index} isDragDisabled={!isReordering}>
+                                       <Draggable key={ex.id} draggableId={ex.id} index={index} isDragDisabled={!isReordering || pendingDeleteIds.has(ex.id)}>
                                           {(provided) => (
                                              <div ref={provided.innerRef} {...provided.draggableProps} style={{ ...provided.draggableProps.style }}>
                                                 <ExerciseCard
                                                    exercise={ex}
                                                    muscleGroup={routine.muscle_group}
                                                    onUpdate={update}
-                                                   onRemove={remove}
+                                                   onRemove={isReordering ? () => togglePendingDelete(ex.id) : remove}
                                                    isReordering={isReordering}
                                                    dragHandleProps={provided.dragHandleProps}
+                                                   isPendingDelete={pendingDeleteIds.has(ex.id)}
                                                 />
                                              </div>
                                           )}

@@ -4,7 +4,11 @@ interface Props extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
 }
 
-const KEY = import.meta.env.VITE_API_WORKOUTX as string;
+const KEYS = [
+  import.meta.env.VITE_API_WORKOUTX,
+  import.meta.env.VITE_API_WORKOUTX_BACKUP1,
+  import.meta.env.VITE_API_WORKOUTX_BACKUP2
+].filter(Boolean) as string[];
 
 // Cache blobs in memory so we don't re-fetch the same GIF multiple times
 const blobCache = new Map<string, string>();
@@ -29,22 +33,39 @@ export default function SecureImage({ src, ...props }: Props) {
     let isMounted = true;
 
     async function fetchImage() {
-      try {
-        const res = await fetch(src, {
-          headers: {
-            'X-WorkoutX-Key': KEY || '',
-          },
-        });
-        
-        if (!res.ok) throw new Error('Failed to load image');
-        
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        
-        blobCache.set(src, url);
-        if (isMounted) setObjectUrl(url);
-      } catch (err) {
-        console.error('Error fetching secure image:', err);
+      if (KEYS.length === 0) {
+        console.error('No WorkoutX API keys configured');
+        return;
+      }
+
+      let success = false;
+      for (const key of KEYS) {
+        if (key.includes('placeholder')) continue;
+        try {
+          const res = await fetch(src, {
+            headers: {
+              'X-WorkoutX-Key': key,
+            },
+          });
+          
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            
+            blobCache.set(src, url);
+            if (isMounted) setObjectUrl(url);
+            success = true;
+            break;
+          } else {
+            console.warn(`SecureImage fetch failed with status ${res.status} for backup key.`);
+          }
+        } catch (err) {
+          console.warn('Error fetching secure image with key:', err);
+        }
+      }
+
+      if (!success) {
+        console.error('Failed to load secure image with all available keys.');
       }
     }
 

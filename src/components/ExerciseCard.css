@@ -557,3 +557,15 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ── Pending delete styling ────────────────────────────── */
+.ec--pending-delete {
+  opacity: 0.4;
+  filter: grayscale(0.85);
+  border-style: dashed;
+}
+
+.ec__ic--undo:hover {
+  background: var(--accent-dim) !important;
+  color: var(--accent) !important;
+}
