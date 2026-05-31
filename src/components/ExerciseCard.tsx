@@ -310,7 +310,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
       {/* Enlarged Modal */}
       {enlargedImg && (
         <div className="ec__enlarged-modal" onClick={() => setEnlargedImg(null)}>
-          <img src={enlargedImg} alt={ex.name} className="ec__enlarged-img" />
+          <SecureImage src={enlargedImg} alt={ex.name} className="ec__enlarged-img" />
         </div>
       )}
     </div>
