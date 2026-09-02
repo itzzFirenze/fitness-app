@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Routine, Exercise, MuscleGroup } from '../types';
+import { formatMuscleGroups } from '../types';
 
 const SEED_DAYS = [
   { day: 'Monday',    day_index: 0, muscle_group: 'Rest' as MuscleGroup, notes: '', completed: false },
@@ -121,13 +122,16 @@ export function useRoutines() {
   const toggleComplete = (r: Routine) =>
     updateRoutine(r.id, { completed: !r.completed });
 
-  const setMuscleGroup = (r: Routine, muscle_group: MuscleGroup) =>
+  const setMuscleGroup = (r: Routine, muscle_group: string) =>
     updateRoutine(r.id, { muscle_group });
+
+  const setMuscleGroups = (r: Routine, groups: MuscleGroup[]) =>
+    updateRoutine(r.id, { muscle_group: formatMuscleGroups(groups) });
 
   const setNotes = (r: Routine, notes: string) =>
     updateRoutine(r.id, { notes });
 
-  return { routines, loading, error, refetch: load, toggleComplete, setMuscleGroup, setNotes, updateRoutine };
+  return { routines, loading, error, refetch: load, toggleComplete, setMuscleGroup, setMuscleGroups, setNotes, updateRoutine };
 }
 
 /* ── Exercises for one routine ───────────────────────────── */
@@ -165,8 +169,9 @@ export function useExercises(routineId: string | undefined) {
   };
 
   const update = async (id: string, patch: Partial<Exercise>) => {
-    await supabase.from('exercises').update(patch).eq('id', id);
+    // Optimistically update local state first so UI reflects changes immediately
     setExercises(p => p.map(e => e.id === id ? { ...e, ...patch } : e));
+    await supabase.from('exercises').update(patch).eq('id', id);
   };
 
   const reorder = async (index: number, direction: 'up' | 'down') => {

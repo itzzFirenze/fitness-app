@@ -152,18 +152,38 @@
 .muscle-chip {
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-dim);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
 
 .muscle-chip:hover {
-  background: rgba(91, 138, 245, 0.2);
+  background: var(--surface);
+  border-color: var(--accent-border);
+  color: var(--text-1);
+}
+
+.muscle-chip--active-day {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.muscle-chip--active-day:hover {
+  background: rgba(91, 138, 245, 0.22);
+}
+
+.muscle-chip__group {
+  opacity: 0.75;
+  font-size: 0.68rem;
+  margin-right: 3px;
+  text-transform: uppercase;
 }
 
 .search-loading {

@@ -36,9 +36,17 @@
 .dc__left {
    display: flex;
    align-items: center;
-   gap: 1px;
+   gap: 10px;
    flex: 1;
    min-width: 0;
+   flex-wrap: wrap;
+}
+
+.dc__badges {
+   display: flex;
+   align-items: center;
+   flex-wrap: wrap;
+   gap: 4px;
 }
 
 .dc__right {

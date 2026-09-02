@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import DayCard from '../components/DayCard';
 import WeekStrip from '../components/WeekStrip';
 import { MuscleIcon, muscleConfig } from '../components/MuscleGroupBadge';
+import { parseMuscleGroups, isRestRoutine } from '../types';
 import './WeekPage.css';
 
 function getTodayIndex() {
@@ -20,8 +21,8 @@ export default function WeekPage() {
 
    const userInitial = (user?.user_metadata?.full_name ?? user?.email ?? '?')[0].toUpperCase();
 
-   const done = routines.filter(r => r.muscle_group !== 'Rest' && r.completed).length;
-   const total = routines.filter(r => r.muscle_group !== 'Rest').length;
+   const done = routines.filter(r => !isRestRoutine(r.muscle_group) && r.completed).length;
+   const total = routines.filter(r => !isRestRoutine(r.muscle_group)).length;
    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
    if (loading) return (
@@ -78,32 +79,44 @@ export default function WeekPage() {
                </div>
                <p className="wp__sub">Your weekly workout planner</p>
 
-               {today && (
-                  <div
-                     className="wp__today-card"
-                     onClick={() => navigate(`/routine/${today.day.toLowerCase()}`)}
-                  >
-                     <div>
-                        <p className="wp__today-label">Today — {today.day}</p>
-                        <div className="wp__today-workout" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                           {today.muscle_group === 'Rest' ? 'Rest Day' : `${today.muscle_group} Day`}
-                           <MuscleIcon group={today.muscle_group} px={24} emoji={muscleConfig[today.muscle_group].emoji} />
+               {today && (() => {
+                  const isTodayRest = isRestRoutine(today.muscle_group);
+                  const todayGroups = parseMuscleGroups(today.muscle_group);
+                  const todayTitle = isTodayRest
+                     ? 'Rest Day'
+                     : `${todayGroups.join(' & ')} Day`;
+
+                  return (
+                     <div
+                        className="wp__today-card"
+                        onClick={() => navigate(`/routine/${today.day.toLowerCase()}`)}
+                     >
+                        <div>
+                           <p className="wp__today-label">Today — {today.day}</p>
+                           <div className="wp__today-workout" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>{todayTitle}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                 {todayGroups.map(g => (
+                                    <MuscleIcon key={g} group={g} px={22} emoji={muscleConfig[g]?.emoji ?? '💪'} />
+                                 ))}
+                              </div>
+                           </div>
+                        </div>
+                        <div className="wp__ring-wrap">
+                           <svg viewBox="0 0 44 44" className="wp__ring">
+                              <circle cx="22" cy="22" r="18" className="ring-track" />
+                              <circle cx="22" cy="22" r="18" className="ring-fill"
+                                 strokeDasharray={`${2 * Math.PI * 18}`}
+                                 strokeDashoffset={`${2 * Math.PI * 18 * (1 - pct / 100)}`} />
+                           </svg>
+                           <div className="ring-label">
+                              <span className="ring-pct">{pct}%</span>
+                              <span className="ring-sub">done</span>
+                           </div>
                         </div>
                      </div>
-                     <div className="wp__ring-wrap">
-                        <svg viewBox="0 0 44 44" className="wp__ring">
-                           <circle cx="22" cy="22" r="18" className="ring-track" />
-                           <circle cx="22" cy="22" r="18" className="ring-fill"
-                              strokeDasharray={`${2 * Math.PI * 18}`}
-                              strokeDashoffset={`${2 * Math.PI * 18 * (1 - pct / 100)}`} />
-                        </svg>
-                        <div className="ring-label">
-                           <span className="ring-pct">{pct}%</span>
-                           <span className="ring-sub">done</span>
-                        </div>
-                     </div>
-                  </div>
-               )}
+                  );
+               })()}
 
                <div className="wp__progress-row">
                   <div className="wp__bar">

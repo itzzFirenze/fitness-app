@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { Routine } from '../types';
-import MuscleGroupBadge from './MuscleGroupBadge';
+import { parseMuscleGroups, isRestRoutine } from '../types';
+import { MuscleGroupBadges } from './MuscleGroupBadge';
 import './DayCard.css';
 
 interface Props {
@@ -10,7 +11,8 @@ interface Props {
 
 export default function DayCard({ routine, isToday }: Props) {
    const navigate = useNavigate();
-   const isRest = routine.muscle_group === 'Rest';
+   const isRest = isRestRoutine(routine.muscle_group);
+   const groups = parseMuscleGroups(routine.muscle_group);
 
    return (
       <div
@@ -19,9 +21,10 @@ export default function DayCard({ routine, isToday }: Props) {
          role="button"
       >
          <div className="dc__left">
-
             <span className="dc__day">{routine.day}</span>
-            <MuscleGroupBadge group={routine.muscle_group} size="sm" />
+            <div className="dc__badges">
+               <MuscleGroupBadges groups={groups} size="sm" gap={4} />
+            </div>
          </div>
 
          <div className="dc__right">
@@ -30,7 +33,6 @@ export default function DayCard({ routine, isToday }: Props) {
                <div
                   className={`dc__check ${routine.completed ? 'dc__check--done' : ''}`}
                >
-
                   {routine.completed ? '✓' : '○'}
                </div>
             )}

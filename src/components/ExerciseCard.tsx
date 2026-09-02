@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Trash2, Menu, RotateCcw } from 'lucide-react';
-import type { Exercise, SetEntry } from '../types';
-import { makeDefaultSets } from '../types';
+import type { Exercise, SetEntry, MuscleGroup } from '../types';
+import { makeDefaultSets, getExerciseMuscleGroup, parseMuscleGroups } from '../types';
+import { muscleConfig } from './MuscleGroupBadge';
 import { supabase } from '../lib/supabase';
 import SecureImage from './SecureImage';
 import './ExerciseCard.css';
@@ -16,19 +17,7 @@ interface Props {
   isPendingDelete?: boolean;
 }
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  strength:              { icon: '🏋️', color: '#818cf8', bg: '#1e1b4b' },
-  cardio:                { icon: '🏃', color: '#34d399', bg: '#022c22' },
-  stretching:            { icon: '🧘', color: '#c084fc', bg: '#2e1065' },
-  plyometrics:           { icon: '⚡', color: '#fb923c', bg: '#431407' },
-  olympic_weightlifting: { icon: '🥇', color: '#60a5fa', bg: '#172554' },
-  powerlifting:          { icon: '💪', color: '#f472b6', bg: '#500724' },
-};
-const FALLBACK_TYPE = { icon: '🏋️', color: '#818cf8', bg: '#1e1b4b' };
-
-function typeConfig(t: string) {
-  return TYPE_CONFIG[t?.toLowerCase()] ?? FALLBACK_TYPE;
-}
+const FALLBACK_TYPE = { emoji: '🏋️', color: '#818cf8', bg: '#1e1b4b' };
 
 function getEffectiveSets(ex: Exercise): SetEntry[] {
   if (Array.isArray(ex.set_data) && ex.set_data.length > 0) return ex.set_data;
@@ -58,10 +47,12 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
     }
   }, [isReordering]);
 
-  const cfg       = typeConfig(ex.exercise_type);
-  const sets      = getEffectiveSets(ex);
-  const hasImage  = Boolean(ex.image_url);
-  const allCompleted = sets.length > 0 && sets.every(s => s.completed);
+  const specificArea  = getExerciseMuscleGroup(ex, muscleGroup);
+  const routineGroups = parseMuscleGroups(muscleGroup).filter(g => g !== 'Rest');
+  const cfg           = muscleConfig[specificArea as MuscleGroup] ?? FALLBACK_TYPE;
+  const sets          = getEffectiveSets(ex);
+  const hasImage      = Boolean(ex.image_url);
+  const allCompleted  = sets.length > 0 && sets.every(s => s.completed);
 
   /* ── Set helpers ─────────────────────────────────────── */
   const saveSets = (next: SetEntry[]) =>
@@ -165,7 +156,7 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
           {hasImage
             ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
                 onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            : <span className="ec__avatar-icon">{cfg.icon}</span>
+            : <span className="ec__avatar-icon">{cfg.emoji}</span>
           }
           <span className="ec__avatar-overlay">🖼️</span>
         </button>
@@ -185,7 +176,20 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
             <span className="ec__name">{ex.name}</span>
           )}
           <div className="ec__meta">
-            <span className="ec__type">{muscleGroup}</span>
+            {isReordering && routineGroups.length > 1 ? (
+              <select
+                className="ec__type-select"
+                value={specificArea}
+                onChange={e => onUpdate(ex.id, { exercise_type: e.target.value })}
+                onClick={e => e.stopPropagation()}
+              >
+                {routineGroups.map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="ec__type" style={{ color: cfg.color }}>{specificArea}</span>
+            )}
           </div>
         </div>
 

@@ -1,21 +1,21 @@
 import { useState, useRef } from 'react';
 import { Pencil, Search } from 'lucide-react';
 import type { Exercise, MuscleGroup } from '../types';
-import { makeDefaultSets } from '../types';
+import { makeDefaultSets, ALL_WORKOUT_GROUPS } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
 import SecureImage from './SecureImage';
 import './ExerciseSearchModal.css';
 
 interface Props {
    routineId: string;
-   muscleGroup: MuscleGroup;
+   muscleGroups: MuscleGroup[];
    onAdd: (ex: Omit<Exercise, 'id' | 'order_index'>) => Promise<unknown>;
    onClose: () => void;
 }
 
 type Tab = 'search' | 'manual';
 
-export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onClose }: Props) {
+export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, onClose }: Props) {
    const [tab, setTab] = useState<Tab>('search');
    const [query, setQuery] = useState('');
    const [results, setResults] = useState<ApiExercise[]>([]);
@@ -196,10 +196,30 @@ export default function ExerciseSearchModal({ routineId, muscleGroup, onAdd, onC
 
                         {/* Body-part filter chips */}
                         <div className="muscle-chips">
-                           {(MUSCLE_MAP[muscleGroup] ?? []).map(m => (
-                              <button key={m} className="muscle-chip" onClick={() => searchApi('', m)}>
-                                 {m}
-                              </button>
+                           {/* Routine specific muscle groups first */}
+                           {muscleGroups.filter(g => g !== 'Rest').map(group => (
+                              (MUSCLE_MAP[group] ?? []).map(m => (
+                                 <button
+                                    key={`${group}-${m}`}
+                                    className="muscle-chip muscle-chip--active-day"
+                                    onClick={() => searchApi('', m)}
+                                 >
+                                    <span className="muscle-chip__group">{group}:</span> {m}
+                                 </button>
+                              ))
+                           ))}
+
+                           {/* Other groups if needed */}
+                           {ALL_WORKOUT_GROUPS.filter(g => !muscleGroups.includes(g)).map(group => (
+                              (MUSCLE_MAP[group] ?? []).map(m => (
+                                 <button
+                                    key={`other-${group}-${m}`}
+                                    className="muscle-chip"
+                                    onClick={() => searchApi('', m)}
+                                 >
+                                    {m}
+                                 </button>
+                              ))
                            ))}
                         </div>
 

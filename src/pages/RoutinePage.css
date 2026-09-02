@@ -85,6 +85,56 @@
   font-weight: 600;
 }
 
+.rp__edit-badge-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.rp__edit-badge-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.rp__group-picker-container {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.15s ease;
+}
+
+.rp__picker-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-2);
+  letter-spacing: 0.3px;
+}
+
+.rp__picker-close {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 3px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .rp__group-picker {
   display: flex;
   flex-wrap: wrap;
@@ -92,16 +142,19 @@
 }
 
 .rp__gp-pill {
-  padding: 5px 14px;
+  padding: 6px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-2);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .rp__gp-pill:hover {
@@ -113,6 +166,52 @@
   background: var(--accent-dim);
   border-color: var(--accent-border);
   color: var(--accent);
+  font-weight: 700;
+}
+
+.rp__gp-pill--rest {
+  border-style: dashed;
+}
+
+.rp__presets-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.rp__presets-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rp__presets-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rp__preset-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.rp__preset-btn:hover {
+  background: var(--surface-3, rgba(255, 255, 255, 0.08));
+  color: var(--text-1);
+  border-color: var(--accent-border);
 }
 
 /* ── Notes ──────────────────────────────────────────────── */

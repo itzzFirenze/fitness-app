@@ -44,8 +44,11 @@ export function MuscleIcon({ group, px, emoji }: { group: MuscleGroup; px: numbe
    );
 }
 
+const fallbackConfig = { emoji: '💪', color: '#818cf8', bg: 'rgba(129,140,248,0.15)' };
+
 export default function MuscleGroupBadge({ group, size = 'md' }: Props) {
-   const { emoji, color, bg } = muscleConfig[group];
+   const config = muscleConfig[group] ?? fallbackConfig;
+   const { emoji, color, bg } = config;
    const px = imgSizeMap[size];
    const fs = fontMap[size];
    const pad = padMap[size];
@@ -70,5 +73,29 @@ export default function MuscleGroupBadge({ group, size = 'md' }: Props) {
          <MuscleIcon group={group} px={px} emoji={emoji} />
          {group.toUpperCase()}
       </span>
+   );
+}
+
+export function MuscleGroupBadges({
+   groups,
+   size = 'md',
+   gap = 6,
+   wrap = true,
+}: {
+   groups: MuscleGroup[];
+   size?: 'sm' | 'md' | 'lg';
+   gap?: number;
+   wrap?: boolean;
+}) {
+   if (!groups || groups.length === 0) {
+      return <MuscleGroupBadge group="Rest" size={size} />;
+   }
+
+   return (
+      <div style={{ display: 'inline-flex', flexWrap: wrap ? 'wrap' : 'nowrap', gap, alignItems: 'center' }}>
+         {groups.map(g => (
+            <MuscleGroupBadge key={g} group={g} size={size} />
+         ))}
+      </div>
    );
 }

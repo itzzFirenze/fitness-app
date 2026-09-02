@@ -1,23 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useRoutines, useExercises } from '../hooks/useRoutines';
 import ExerciseCard from '../components/ExerciseCard';
 import ExerciseSearchModal from '../components/ExerciseSearchModal';
-import MuscleGroupBadge from '../components/MuscleGroupBadge';
+import { MuscleGroupBadges, muscleConfig } from '../components/MuscleGroupBadge';
 import type { MuscleGroup } from '../types';
+import { parseMuscleGroups, isRestRoutine, ALL_WORKOUT_GROUPS } from '../types';
 import { supabase } from '../lib/supabase';
 import './RoutinePage.css';
 
-const ALL_GROUPS: MuscleGroup[] = [
-   'Back', 'Chest', 'Biceps', 'Triceps', 'Shoulders', 'Arms', 'Legs', 'Core', 'Cardio', 'Rest',
+const PRESETS: { label: string; groups: MuscleGroup[] }[] = [
+   { label: 'Push (Chest/Sh/Tri)', groups: ['Chest', 'Shoulders', 'Triceps'] },
+   { label: 'Pull (Back/Bi)', groups: ['Back', 'Biceps'] },
+   { label: 'Chest & Triceps', groups: ['Chest', 'Triceps'] },
+   { label: 'Back & Biceps', groups: ['Back', 'Biceps'] },
+   { label: 'Legs & Core', groups: ['Legs', 'Core'] },
+   { label: 'Shoulders & Arms', groups: ['Shoulders', 'Arms'] },
 ];
 
 export default function RoutinePage() {
    const { day } = useParams<{ day: string }>();
    const navigate = useNavigate();
-   const { routines, loading: rLoading, updateRoutine, setMuscleGroup } = useRoutines();
+   const { routines, loading: rLoading, updateRoutine, setMuscleGroups } = useRoutines();
 
    const routine = routines.find(r => r.day.toLowerCase() === day?.toLowerCase());
    const { exercises, loading: exLoading, add, remove, update, saveOrder } = useExercises(routine?.id);
@@ -36,6 +42,19 @@ export default function RoutinePage() {
          setLocalExercises(exercises);
       }
    }, [exercises, isReordering]);
+
+   // Wrapper so that patches (e.g. the area-switcher dropdown) also update
+   // localExercises immediately — exercises alone isn't enough because the
+   // sync effect above is intentionally skipped while isReordering is true.
+   const handleExerciseUpdate = useCallback(
+      (id: string, patch: Partial<Parameters<typeof update>[1]>) => {
+         setLocalExercises(prev =>
+            prev.map(e => (e.id === id ? { ...e, ...patch } : e))
+         );
+         update(id, patch as any);
+      },
+      [update]
+   );
 
    const handleDragEnd = (result: DropResult) => {
       if (!result.destination) return;
@@ -94,7 +113,30 @@ export default function RoutinePage() {
       <div className="rp-loading"><p>Routine not found.</p><button onClick={() => navigate('/')}>← Back</button></div>
    );
 
-   const isRest = routine.muscle_group === 'Rest';
+   const isRest = isRestRoutine(routine.muscle_group);
+   const currentGroups = parseMuscleGroups(routine.muscle_group);
+
+   const handleToggleMuscleGroup = (g: MuscleGroup) => {
+      if (g === 'Rest') {
+         setMuscleGroups(routine, ['Rest']);
+         return;
+      }
+      if (isRest) {
+         // Switch from Rest to this single workout area
+         setMuscleGroups(routine, [g]);
+         return;
+      }
+      if (currentGroups.includes(g)) {
+         const next = currentGroups.filter(x => x !== g);
+         setMuscleGroups(routine, next.length > 0 ? next : ['Rest']);
+      } else {
+         setMuscleGroups(routine, [...currentGroups, g]);
+      }
+   };
+
+   const handleApplyPreset = (presetGroups: MuscleGroup[]) => {
+      setMuscleGroups(routine, presetGroups);
+   };
 
    return (
       <div className="app">
@@ -113,11 +155,21 @@ export default function RoutinePage() {
             {/* Header */}
             <header className="rp__header">
                <h1 className="rp__day">{routine.day}</h1>
-               <div className="rp__group-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                     <div onClick={() => !isReordering && setEditingGroup(g => !g)} style={{ cursor: isReordering ? 'default' : 'pointer' }}>
-                        <MuscleGroupBadge group={routine.muscle_group} size="lg" />
+               <div className="rp__group-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                     <div
+                        onClick={() => !isReordering && setEditingGroup(g => !g)}
+                        style={{ cursor: isReordering ? 'default' : 'pointer' }}
+                        title="Click to edit workout areas"
+                     >
+                        <MuscleGroupBadges groups={currentGroups} size="lg" />
                      </div>
+                     <button
+                        className="rp__edit-badge-btn"
+                        onClick={() => !isReordering && setEditingGroup(g => !g)}
+                     >
+                        {editingGroup ? 'Done' : 'Change Areas ▾'}
+                     </button>
                      {!isRest && <span className="rp__ex-count">{exercises.length} exercises</span>}
                   </div>
                   {!isRest && exercises.length > 1 && (
@@ -128,20 +180,58 @@ export default function RoutinePage() {
                               <button onClick={handleSaveOrder} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Save</button>
                            </>
                         ) : (
-                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Edit</button>
+                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Edit Order</button>
                         )}
                      </div>
                   )}
                </div>
+
                {editingGroup && (
-                  <div className="rp__group-picker">
-                     {ALL_GROUPS.map(g => (
+                  <div className="rp__group-picker-container">
+                     <div className="rp__picker-title">
+                        <span>Select Target Areas (Choose 1, 2, or more)</span>
+                        <button className="rp__picker-close" onClick={() => setEditingGroup(false)}>Done</button>
+                     </div>
+
+                     {/* Workout area pills */}
+                     <div className="rp__group-picker">
+                        {ALL_WORKOUT_GROUPS.map(g => {
+                           const active = !isRest && currentGroups.includes(g);
+                           const cfg = muscleConfig[g];
+                           return (
+                              <button
+                                 key={g}
+                                 className={`rp__gp-pill ${active ? 'active' : ''}`}
+                                 style={active ? { borderColor: cfg?.color, background: cfg?.bg, color: cfg?.color } : undefined}
+                                 onClick={() => handleToggleMuscleGroup(g)}
+                              >
+                                 {active ? '✓ ' : '+ '}{g}
+                              </button>
+                           );
+                        })}
                         <button
-                           key={g}
-                           className={`rp__gp-pill ${routine.muscle_group === g ? 'active' : ''}`}
-                           onClick={() => { setMuscleGroup(routine, g); setEditingGroup(false); }}
-                        >{g}</button>
-                     ))}
+                           className={`rp__gp-pill rp__gp-pill--rest ${isRest ? 'active' : ''}`}
+                           onClick={() => handleToggleMuscleGroup('Rest')}
+                        >
+                           {isRest ? '✓ ' : '😴 '}Rest Day
+                        </button>
+                     </div>
+
+                     {/* Quick Split Presets */}
+                     <div className="rp__presets-section">
+                        <span className="rp__presets-title">Quick Splits:</span>
+                        <div className="rp__presets-list">
+                           {PRESETS.map(p => (
+                              <button
+                                 key={p.label}
+                                 className="rp__preset-btn"
+                                 onClick={() => handleApplyPreset(p.groups)}
+                              >
+                                 {p.label}
+                              </button>
+                           ))}
+                        </div>
+                     </div>
                   </div>
                )}
             </header>
@@ -177,7 +267,7 @@ export default function RoutinePage() {
                                                 <ExerciseCard
                                                    exercise={ex}
                                                    muscleGroup={routine.muscle_group}
-                                                   onUpdate={update}
+                                                   onUpdate={handleExerciseUpdate}
                                                    onRemove={isReordering ? () => togglePendingDelete(ex.id) : remove}
                                                    isReordering={isReordering}
                                                    dragHandleProps={provided.dragHandleProps}
@@ -207,7 +297,7 @@ export default function RoutinePage() {
          {showModal && routine && (
             <ExerciseSearchModal
                routineId={routine.id}
-               muscleGroup={routine.muscle_group}
+               muscleGroups={currentGroups}
                onAdd={add}
                onClose={() => setShowModal(false)}
             />
