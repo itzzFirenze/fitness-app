@@ -136,22 +136,68 @@
   transition: color 0.2s;
 }
 
-.ec__type-select {
-  font-size: 0.63rem;
-  font-weight: 700;
-  font-family: inherit;
-  background: var(--surface-2);
-  border: 1px solid var(--accent-border);
-  border-radius: 6px;
-  color: var(--accent);
-  padding: 2px 6px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s;
+.ec__selectors-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-.ec__type-select:focus {
+.ec__selector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 4px 1px 6px;
+  transition: all 0.15s;
+}
+
+.ec__selector-pill:focus-within,
+.ec__selector-pill:hover {
+  border-color: var(--accent-border);
+}
+
+.ec__selector-pill--day {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.ec__selector-pill--day:hover {
   border-color: var(--accent);
+}
+
+.ec__selector-tag {
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.ec__type-select,
+.ec__day-select {
+  font-size: 0.64rem;
+  font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  color: var(--text-1);
+  padding: 2px 2px;
+  cursor: pointer;
+  outline: none;
+}
+
+.ec__day-select {
+  color: var(--accent);
+  font-weight: 600;
+  max-width: 110px;
+}
+
+.ec__type-select option,
+.ec__day-select option {
+  background: var(--surface);
+  color: var(--text-1);
 }
 
 /* ── Action icons ────────────────────────────────────────── */

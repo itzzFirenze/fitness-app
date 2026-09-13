@@ -1,4 +1,4 @@
-export type MuscleGroup =
+export type WorkoutMuscleGroup =
   | 'Back'
   | 'Chest'
   | 'Biceps'
@@ -7,8 +7,9 @@ export type MuscleGroup =
   | 'Arms'
   | 'Legs'
   | 'Core'
-  | 'Cardio'
-  | 'Rest';
+  | 'Cardio';
+
+export type MuscleGroup = WorkoutMuscleGroup | 'Rest';
 
 export interface SetEntry {
   id: string;
@@ -17,7 +18,7 @@ export interface SetEntry {
   completed: boolean;
 }
 
-export const ALL_WORKOUT_GROUPS: MuscleGroup[] = [
+export const ALL_WORKOUT_GROUPS: WorkoutMuscleGroup[] = [
   'Chest',
   'Back',
   'Biceps',

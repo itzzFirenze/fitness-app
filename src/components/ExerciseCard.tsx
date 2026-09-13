@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Trash2, Menu, RotateCcw } from 'lucide-react';
-import type { Exercise, SetEntry, MuscleGroup } from '../types';
-import { makeDefaultSets, getExerciseMuscleGroup, parseMuscleGroups } from '../types';
+import type { Exercise, SetEntry, MuscleGroup, Routine } from '../types';
+import { makeDefaultSets, getExerciseMuscleGroup, parseMuscleGroups, ALL_WORKOUT_GROUPS } from '../types';
 import { muscleConfig } from './MuscleGroupBadge';
 import { supabase } from '../lib/supabase';
 import SecureImage from './SecureImage';
@@ -15,6 +15,8 @@ interface Props {
   isReordering?: boolean;
   dragHandleProps?: any;
   isPendingDelete?: boolean;
+  routines?: Routine[];
+  onMoveToRoutine?: (exerciseId: string, targetRoutineId: string) => void;
 }
 
 const FALLBACK_TYPE = { emoji: '🏋️', color: '#818cf8', bg: '#1e1b4b' };
@@ -28,7 +30,17 @@ function uid() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRemove, isReordering, dragHandleProps, isPendingDelete }: Props) {
+export default function ExerciseCard({
+  exercise: ex,
+  muscleGroup,
+  onUpdate,
+  onRemove,
+  isReordering,
+  dragHandleProps,
+  isPendingDelete,
+  routines,
+  onMoveToRoutine,
+}: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
   const [showImgForm,  setShowImgForm]  = useState(false);
@@ -176,17 +188,49 @@ export default function ExerciseCard({ exercise: ex, muscleGroup, onUpdate, onRe
             <span className="ec__name">{ex.name}</span>
           )}
           <div className="ec__meta">
-            {isReordering && routineGroups.length > 1 ? (
-              <select
-                className="ec__type-select"
-                value={specificArea}
-                onChange={e => onUpdate(ex.id, { exercise_type: e.target.value })}
-                onClick={e => e.stopPropagation()}
-              >
-                {routineGroups.map(g => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
+            {isReordering ? (
+              <div className="ec__selectors-row" onClick={e => e.stopPropagation()}>
+                <div className="ec__selector-pill" title="Change target muscle group">
+                  <span className="ec__selector-tag" style={{ color: cfg.color }}>{cfg.emoji}</span>
+                  <select
+                    className="ec__type-select"
+                    value={specificArea}
+                    onChange={e => onUpdate(ex.id, { exercise_type: e.target.value })}
+                  >
+                    {ALL_WORKOUT_GROUPS.map(g => (
+                      <option key={g} value={g}>
+                        {g}{routineGroups.includes(g) ? ' ★' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {onMoveToRoutine && routines && routines.length > 1 && (
+                  <div className="ec__selector-pill ec__selector-pill--day" title="Move exercise to another day">
+                    <span className="ec__selector-tag">📅</span>
+                    <select
+                      className="ec__day-select"
+                      defaultValue=""
+                      onChange={e => {
+                        const targetId = e.target.value;
+                        if (targetId) {
+                          onMoveToRoutine(ex.id, targetId);
+                          e.target.value = '';
+                        }
+                      }}
+                    >
+                      <option value="" disabled>Move to day…</option>
+                      {routines
+                        .filter(r => r.id !== ex.routine_id)
+                        .map(r => (
+                          <option key={r.id} value={r.id}>
+                            {r.day} ({r.muscle_group})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             ) : (
               <span className="ec__type" style={{ color: cfg.color }}>{specificArea}</span>
             )}

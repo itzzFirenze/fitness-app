@@ -210,5 +210,5 @@ export function useExercises(routineId: string | undefined) {
     );
   };
 
-  return { exercises, loading, add, remove, update, reorder, saveOrder };
+  return { exercises, loading, add, remove, update, reorder, saveOrder, refetch: load };
 }

@@ -26,10 +26,11 @@ export default function RoutinePage() {
    const { routines, loading: rLoading, updateRoutine, setMuscleGroups } = useRoutines();
 
    const routine = routines.find(r => r.day.toLowerCase() === day?.toLowerCase());
-   const { exercises, loading: exLoading, add, remove, update, saveOrder } = useExercises(routine?.id);
+   const { exercises, loading: exLoading, add, remove, update, saveOrder, refetch } = useExercises(routine?.id);
 
    const [showModal, setShowModal] = useState(false);
    const [editingGroup, setEditingGroup] = useState(false);
+   const [moveToast, setMoveToast] = useState<string | null>(null);
 
    // Drag and drop local state
    const [isReordering, setIsReordering] = useState(false);
@@ -93,6 +94,47 @@ export default function RoutinePage() {
       setPendingDeleteIds(new Set());
       setIsReordering(false);
    };
+
+   const handleMoveExerciseToRoutine = useCallback(
+      async (exerciseId: string, targetRoutineId: string) => {
+         const targetRoutine = routines.find(r => r.id === targetRoutineId);
+         const exToMove = localExercises.find(e => e.id === exerciseId);
+         if (!targetRoutine || !exToMove) return;
+
+         // Optimistically remove from localExercises & pendingDeleteIds
+         setLocalExercises(prev => prev.filter(e => e.id !== exerciseId));
+         setPendingDeleteIds(prev => {
+            const next = new Set(prev);
+            next.delete(exerciseId);
+            return next;
+         });
+
+         // Get count in target routine to place at the end
+         const { count } = await supabase
+            .from('exercises')
+            .select('id', { count: 'exact', head: true })
+            .eq('routine_id', targetRoutineId);
+
+         const { error } = await supabase
+            .from('exercises')
+            .update({
+               routine_id: targetRoutineId,
+               order_index: count ?? 99,
+            })
+            .eq('id', exerciseId);
+
+         if (error) {
+            console.error('Failed to move exercise:', error);
+            setLocalExercises(prev => [...prev, exToMove]);
+            return;
+         }
+
+         refetch();
+         setMoveToast(`Moved "${exToMove.name}" to ${targetRoutine.day}`);
+         setTimeout(() => setMoveToast(null), 3500);
+      },
+      [routines, localExercises, refetch]
+   );
 
    // Auto-complete routine when all exercises are done
    useEffect(() => {
@@ -172,7 +214,7 @@ export default function RoutinePage() {
                      </button>
                      {!isRest && <span className="rp__ex-count">{exercises.length} exercises</span>}
                   </div>
-                  {!isRest && exercises.length > 1 && (
+                  {!isRest && exercises.length > 0 && (
                      <div className="rp__reorder-actions" style={{ display: 'flex', gap: '8px' }}>
                         {isReordering ? (
                            <>
@@ -180,7 +222,7 @@ export default function RoutinePage() {
                               <button onClick={handleSaveOrder} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Save</button>
                            </>
                         ) : (
-                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Edit Order</button>
+                           <button onClick={() => setIsReordering(true)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-1)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Edit Routine</button>
                         )}
                      </div>
                   )}
@@ -272,6 +314,8 @@ export default function RoutinePage() {
                                                    isReordering={isReordering}
                                                    dragHandleProps={provided.dragHandleProps}
                                                    isPendingDelete={pendingDeleteIds.has(ex.id)}
+                                                   routines={routines}
+                                                   onMoveToRoutine={handleMoveExerciseToRoutine}
                                                 />
                                              </div>
                                           )}
@@ -301,6 +345,13 @@ export default function RoutinePage() {
                onAdd={add}
                onClose={() => setShowModal(false)}
             />
+         )}
+
+         {moveToast && (
+            <div className="rp__toast">
+               <span>✓ {moveToast}</span>
+               <button onClick={() => setMoveToast(null)}>✕</button>
+            </div>
          )}
       </div>
    );
