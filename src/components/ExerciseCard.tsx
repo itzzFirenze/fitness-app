@@ -167,6 +167,11 @@ export default function ExerciseCard({
         >
           {hasImage
             ? <SecureImage src={ex.image_url} alt={ex.name} className="ec__avatar-img"
+                onResolved={(supaUrl) => {
+                  if (supaUrl && ex.image_url.includes('api.workoutxapp.com') && supaUrl !== ex.image_url) {
+                    onUpdate(ex.id, { image_url: supaUrl });
+                  }
+                }}
                 onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             : <span className="ec__avatar-icon">{cfg.emoji}</span>
           }

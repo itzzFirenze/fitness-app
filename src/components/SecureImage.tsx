@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react';
+import { getOrFetchGif } from '../lib/gifStorage';
 
 interface Props extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
+  onResolved?: (supabaseUrl: string) => void;
 }
 
-const KEYS = [
-  import.meta.env.VITE_API_WORKOUTX,
-  import.meta.env.VITE_API_WORKOUTX_BACKUP1,
-  import.meta.env.VITE_API_WORKOUTX_BACKUP2
-].filter(Boolean) as string[];
-
-// Cache blobs in memory so we don't re-fetch the same GIF multiple times
-const blobCache = new Map<string, string>();
-
-export default function SecureImage({ src, ...props }: Props) {
+export default function SecureImage({ src, onResolved, ...props }: Props) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!src) return;
+    if (!src) {
+      setObjectUrl(null);
+      return;
+    }
 
     // If it's not a WorkoutX URL, just use it directly
     if (!src.includes('api.workoutxapp.com')) {
@@ -25,56 +21,25 @@ export default function SecureImage({ src, ...props }: Props) {
       return;
     }
 
-    if (blobCache.has(src)) {
-      setObjectUrl(blobCache.get(src)!);
-      return;
-    }
-
     let isMounted = true;
 
-    async function fetchImage() {
-      if (KEYS.length === 0) {
-        console.error('No WorkoutX API keys configured');
-        return;
-      }
-
-      let success = false;
-      for (const key of KEYS) {
-        if (key.includes('placeholder')) continue;
-        try {
-          const res = await fetch(src, {
-            headers: {
-              'X-WorkoutX-Key': key,
-            },
-          });
-          
-          if (res.ok) {
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            
-            blobCache.set(src, url);
-            if (isMounted) setObjectUrl(url);
-            success = true;
-            break;
-          } else {
-            console.warn(`SecureImage fetch failed with status ${res.status} for backup key.`);
-          }
-        } catch (err) {
-          console.warn('Error fetching secure image with key:', err);
+    getOrFetchGif(src)
+      .then(result => {
+        if (!isMounted) return;
+        setObjectUrl(result.url);
+        if (result.supabaseUrl && onResolved) {
+          onResolved(result.supabaseUrl);
         }
-      }
-
-      if (!success) {
-        console.error('Failed to load secure image with all available keys.');
-      }
-    }
-
-    fetchImage();
+      })
+      .catch(err => {
+        console.warn('SecureImage getOrFetchGif error:', err);
+        if (isMounted) setObjectUrl(src);
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [src]);
+  }, [src, onResolved]);
 
   if (!objectUrl) {
     // Return a skeleton/placeholder while loading
@@ -83,3 +48,4 @@ export default function SecureImage({ src, ...props }: Props) {
 
   return <img src={objectUrl} {...props} />;
 }
+

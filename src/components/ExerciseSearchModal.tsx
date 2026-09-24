@@ -3,6 +3,7 @@ import { Pencil, Search } from 'lucide-react';
 import type { Exercise, MuscleGroup } from '../types';
 import { makeDefaultSets, ALL_WORKOUT_GROUPS } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
+import { ensureGifSavedToSupabase } from '../lib/gifStorage';
 import SecureImage from './SecureImage';
 import './ExerciseSearchModal.css';
 
@@ -71,11 +72,19 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
    const handleConfirmApi = async () => {
       if (!selected) return;
       setSaving(true);
+      let imageUrl = selected.gifUrl ?? '';
+      if (imageUrl) {
+         try {
+            imageUrl = await ensureGifSavedToSupabase(imageUrl);
+         } catch (err) {
+            console.warn('Failed to ensure GIF in Supabase:', err);
+         }
+      }
       await onAdd({
          routine_id: routineId,
          name: selected.name,
          exercise_type: selected.bodyPart,
-         image_url: selected.gifUrl ?? '',
+         image_url: imageUrl,
          set_data: makeDefaultSets(details.sets, details.reps, details.weight),
          ...details,
       });
