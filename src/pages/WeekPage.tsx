@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scale, ChevronRight } from 'lucide-react';
 import { useRoutines } from '../hooks/useRoutines';
-import { useAuth } from '../context/AuthContext';
 import { useBodyMetrics } from '../hooks/useBodyMetrics';
 import DayCard from '../components/DayCard';
 import WeekStrip from '../components/WeekStrip';
@@ -19,7 +18,6 @@ function getTodayIndex() {
 export default function WeekPage() {
    const navigate = useNavigate();
    const { routines, loading, error } = useRoutines();
-   const { user } = useAuth();
    const { metrics, stats } = useBodyMetrics();
    const todayIndex = useMemo(() => getTodayIndex(), []);
 

@@ -42,7 +42,7 @@ export function useBodyMetrics() {
     }
     return DEFAULT_METRICS;
   });
-  const [loading, setLoading] = useState(false);
+  const loading = false;
   const [saving, setSaving] = useState(false);
 
   // Sync from Supabase user_metadata if available

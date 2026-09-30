@@ -6,10 +6,8 @@ import {
   Ruler,
   Activity,
   Flame,
-  Target,
   Check,
   Sparkles,
-  Info,
 } from 'lucide-react';
 import { useBodyMetrics, computeBodyStats } from '../hooks/useBodyMetrics';
 import type { BodyMetrics } from '../hooks/useBodyMetrics';

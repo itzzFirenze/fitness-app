@@ -26,11 +26,6 @@ const MONTH_NAMES = [
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function formatVolume(v: number): string {
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-  return String(v);
-}
-
 function formatCalories(cal: number): string {
   if (cal >= 1000) return `~${(cal / 1000).toFixed(1)}k`;
   if (cal > 0) return `~${cal}`;
