@@ -295,3 +295,77 @@
   border-radius: 4px;
   color: var(--accent);
 }
+
+/* ── Body metrics quick bar ───────────────────────────── */
+.wp__metrics-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wp__metrics-bar:hover {
+  background: var(--surface-2);
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.wp__metrics-bar:active {
+  transform: translateY(0);
+}
+
+.wp__metrics-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wp__metrics-bar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(91, 138, 245, 0.12);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wp__metrics-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wp__metrics-bar-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.wp__metrics-bar-desc {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wp__metrics-bar-arrow {
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.wp__metrics-bar:hover .wp__metrics-bar-arrow {
+  color: var(--accent);
+  transform: translateX(2px);
+}

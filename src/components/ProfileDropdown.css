@@ -1,0 +1,195 @@
+/* ── Profile Dropdown ─────────────────────────────────── */
+.profile-dropdown {
+  position: relative;
+  z-index: 100;
+}
+
+.profile-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.profile-dropdown__trigger:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.profile-dropdown__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1.5px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-dropdown__trigger:hover .profile-dropdown__avatar {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.profile-dropdown__chevron {
+  color: var(--text-3);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
+}
+
+.profile-dropdown__chevron.open {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* ── Menu ─────────────────────────────────────────────── */
+.profile-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: profileDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(20px);
+}
+
+@keyframes profileDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── User info ────────────────────────────────────────── */
+.profile-dropdown__user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.profile-dropdown__user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.profile-dropdown__user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.profile-dropdown__user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-dropdown__user-email {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-dropdown__user-metrics {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Divider ──────────────────────────────────────────── */
+.profile-dropdown__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}
+
+/* ── Menu items ───────────────────────────────────────── */
+.profile-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+}
+
+.profile-dropdown__item:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.profile-dropdown__item svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.profile-dropdown__item:hover svg {
+  opacity: 1;
+}
+
+.profile-dropdown__item-hint {
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-3);
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ── Danger item (logout) ─────────────────────────────── */
+.profile-dropdown__item--danger:hover {
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--red);
+}
+
+.profile-dropdown__item--danger:hover svg {
+  stroke: var(--red);
+}

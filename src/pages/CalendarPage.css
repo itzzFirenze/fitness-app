@@ -1,0 +1,506 @@
+/* ── Calendar page layout ─────────────────────────────── */
+.cal {
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20px 16px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Navigation ───────────────────────────────────────── */
+.cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cal__back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.cal__back:hover {
+  color: var(--text-1);
+  background: var(--surface-2);
+  border-color: var(--accent-border);
+}
+
+.cal__today-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.cal__today-btn:hover {
+  background: rgba(91, 138, 245, 0.2);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* ── Month header ─────────────────────────────────────── */
+.cal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.cal__arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.cal__arrow:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+  border-color: var(--accent-border);
+}
+
+.cal__month-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cal__month-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+}
+
+.cal__year {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 1px;
+}
+
+/* ── Stats bar ────────────────────────────────────────── */
+.cal__stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 0;
+}
+
+.cal__stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cal__stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cal__stat-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.cal__stat-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+/* ── Calendar grid ────────────────────────────────────── */
+.cal__grid-container {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 16px 12px;
+  overflow: hidden;
+}
+
+.cal__loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.7);
+  display: grid;
+  place-items: center;
+  z-index: 5;
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(4px);
+}
+
+.cal__day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.cal__day-header {
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 0;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+/* ── Day cell ─────────────────────────────────────────── */
+.cal__cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  padding: 2px;
+  font-family: inherit;
+  color: inherit;
+}
+
+.cal__cell:hover {
+  background: var(--surface-2);
+}
+
+.cal__cell--outside {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.cal__cell--today {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+.cal__cell--today .cal__cell-date {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.cal__cell--selected {
+  border-color: var(--accent);
+  background: rgba(91, 138, 245, 0.15);
+  transform: scale(1.05);
+}
+
+.cal__cell--workout {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cal__cell--completed {
+  background: rgba(62, 207, 142, 0.06);
+}
+
+.cal__cell--completed .cal__cell-date {
+  color: var(--green);
+}
+
+.cal__cell-date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-2);
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cal__cell-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.cal__cell-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal__cell-check {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Details panel ────────────────────────────────────── */
+.cal__details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  animation: calDetailsSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes calDetailsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cal__details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cal__details-day {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.3px;
+}
+
+.cal__details-date {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.cal__details-badges {
+  flex-shrink: 0;
+}
+
+/* ── Details stats ────────────────────────────────────── */
+.cal__details-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cal__details-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  min-width: 0;
+}
+
+.cal__details-stat > div {
+  min-width: 0;
+}
+
+.cal__details-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.cal__details-stat-icon--exercises {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.12);
+}
+
+.cal__details-stat-icon--sets {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.cal__details-stat-icon--calories {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.12);
+}
+
+.cal__details-stat-icon--duration {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.cal__details-stat-value {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-1);
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cal__details-stat-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+/* ── Exercise list ────────────────────────────────────── */
+.cal__exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal__exercise-list-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.cal__exercise-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  position: relative;
+}
+
+.cal__exercise-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cal__exercise-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: -0.1px;
+}
+
+.cal__exercise-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.cal__exercise-type-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal__exercise-calories,
+.cal__exercise-volume {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  position: absolute;
+  top: 12px;
+  right: 14px;
+}
+
+.cal__exercise-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cal__exercise-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* ── Completed badge ──────────────────────────────────── */
+.cal__completed-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--green-dim);
+  border: 1px solid rgba(62, 207, 142, 0.25);
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ── Empty hint ───────────────────────────────────────── */
+.cal__empty-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.cal__empty-hint svg {
+  opacity: 0.5;
+  flex-shrink: 0;
+}

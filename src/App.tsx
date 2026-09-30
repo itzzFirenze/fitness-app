@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import WeekPage from './pages/WeekPage';
 import RoutinePage from './pages/RoutinePage';
+import CalendarPage from './pages/CalendarPage';
+import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 
 function AppRoutes() {
@@ -36,6 +38,8 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<WeekPage />} />
         <Route path="/routine/:day" element={<RoutinePage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );

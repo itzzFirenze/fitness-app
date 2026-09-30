@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Scale, ChevronRight } from 'lucide-react';
 import { useRoutines } from '../hooks/useRoutines';
 import { useAuth } from '../context/AuthContext';
+import { useBodyMetrics } from '../hooks/useBodyMetrics';
 import DayCard from '../components/DayCard';
 import WeekStrip from '../components/WeekStrip';
+import ProfileDropdown from '../components/ProfileDropdown';
 import { MuscleIcon, muscleConfig } from '../components/MuscleGroupBadge';
 import { parseMuscleGroups, isRestRoutine } from '../types';
 import './WeekPage.css';
@@ -16,10 +19,9 @@ function getTodayIndex() {
 export default function WeekPage() {
    const navigate = useNavigate();
    const { routines, loading, error } = useRoutines();
-   const { user, signOut } = useAuth();
+   const { user } = useAuth();
+   const { metrics, stats } = useBodyMetrics();
    const todayIndex = useMemo(() => getTodayIndex(), []);
-
-   const userInitial = (user?.user_metadata?.full_name ?? user?.email ?? '?')[0].toUpperCase();
 
    const done = routines.filter(r => !isRestRoutine(r.muscle_group) && r.completed).length;
    const total = routines.filter(r => !isRestRoutine(r.muscle_group)).length;
@@ -65,17 +67,7 @@ export default function WeekPage() {
                      <img src="/apex_fitness.png" alt="Logo" height={40} width={40} />
                      <span className="logo-text">Apex Fitness</span>
                   </div>
-                  <div className="wp__user">
-                     <div className="wp__avatar" title={user?.email ?? ''}>{userInitial}</div>
-                     <button id="signout-btn" className="wp__signout" onClick={signOut} title="Sign out">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                           <polyline points="16 17 21 12 16 7" />
-                           <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        Sign out
-                     </button>
-                  </div>
+                  <ProfileDropdown />
                </div>
                <p className="wp__sub">Your weekly workout planner</p>
 
@@ -123,6 +115,24 @@ export default function WeekPage() {
                      <div className="wp__bar-fill" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="wp__progress-text">{done}/{total} this week</span>
+               </div>
+
+               {/* Body Metrics Quick Bar */}
+               <div className="wp__metrics-bar" onClick={() => navigate('/profile')}>
+                  <div className="wp__metrics-bar-left">
+                     <div className="wp__metrics-bar-icon">
+                        <Scale size={16} strokeWidth={2.2} />
+                     </div>
+                     <div className="wp__metrics-bar-text">
+                        <span className="wp__metrics-bar-title">Body Profile & Metrics</span>
+                        <span className="wp__metrics-bar-desc">
+                           {metrics.weight
+                              ? `${metrics.weight} ${metrics.weightUnit}${stats.heightCm ? ` · ${Math.round(stats.heightCm)} cm` : ''}${stats.bmi ? ` · BMI ${stats.bmi}` : ''}`
+                              : 'Enter your weight & height to calculate BMI & calorie burn'}
+                        </span>
+                     </div>
+                  </div>
+                  <ChevronRight size={16} strokeWidth={2.2} className="wp__metrics-bar-arrow" />
                </div>
             </header>
 
