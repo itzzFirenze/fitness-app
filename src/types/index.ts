@@ -11,11 +11,16 @@ export type WorkoutMuscleGroup =
 
 export type MuscleGroup = WorkoutMuscleGroup | 'Rest';
 
+export type ExerciseCategory = 'machine_weight' | 'reps_only' | 'cardio_time';
+
 export interface SetEntry {
   id: string;
   reps: string;
   weight: string;
   completed: boolean;
+  minutes?: string;
+  calories?: string;
+  category?: ExerciseCategory;
 }
 
 export const ALL_WORKOUT_GROUPS: WorkoutMuscleGroup[] = [
@@ -122,17 +127,105 @@ export interface Exercise {
   set_data: SetEntry[];
   exercise_type: string;
   image_url: string;
+  category?: ExerciseCategory;
+}
+
+export function getExerciseCategory(
+  exercise: { name?: string; exercise_type?: string; set_data?: SetEntry[]; category?: ExerciseCategory }
+): ExerciseCategory {
+  // 1. Explicitly set category
+  if (exercise.category) return exercise.category;
+  if (exercise.set_data?.[0]?.category) return exercise.set_data[0].category;
+
+  // 2. Check if minutes or calories exist in set_data
+  if (exercise.set_data?.some(s => (s.minutes !== undefined && s.minutes !== '') || (s.calories !== undefined && s.calories !== ''))) {
+    return 'cardio_time';
+  }
+
+  const name = (exercise.name || '').toLowerCase();
+  const type = (exercise.exercise_type || '').toLowerCase();
+
+  // 3. Cardio keywords (Treadmill, Bike, etc.)
+  if (
+    name.includes('treadmill') ||
+    name.includes('running') ||
+    name.includes('run') ||
+    name.includes('jog') ||
+    name.includes('bike') ||
+    name.includes('cycle') ||
+    name.includes('cycling') ||
+    name.includes('elliptical') ||
+    name.includes('stairmaster') ||
+    name.includes('stair climber') ||
+    name.includes('rower') ||
+    name.includes('rowing') ||
+    name.includes('walk') ||
+    name.includes('walking') ||
+    name.includes('jump rope') ||
+    name.includes('skipping') ||
+    type === 'cardio'
+  ) {
+    return 'cardio_time';
+  }
+
+  // 4. Reps-only bodyweight keywords (Bench Dip, Pushups, Pull-ups, Abs, etc.)
+  if (
+    name.includes('bench dip') ||
+    name.includes('dip') ||
+    name.includes('pushup') ||
+    name.includes('push-up') ||
+    name.includes('push up') ||
+    name.includes('pullup') ||
+    name.includes('pull-up') ||
+    name.includes('pull up') ||
+    name.includes('chinup') ||
+    name.includes('chin-up') ||
+    name.includes('chin up') ||
+    name.includes('crunch') ||
+    name.includes('situp') ||
+    name.includes('sit-up') ||
+    name.includes('sit up') ||
+    name.includes('plank') ||
+    name.includes('leg raise') ||
+    name.includes('knee raise') ||
+    name.includes('flutter') ||
+    name.includes('russian twist') ||
+    name.includes('twist') ||
+    name.includes('burpee') ||
+    name.includes('jumping jack') ||
+    name.includes('bodyweight') ||
+    name.includes('abs') ||
+    name.includes('ab ') ||
+    name.startsWith('ab ') ||
+    name === 'ab' ||
+    name === 'abs' ||
+    name.includes('core') ||
+    type.includes('waist') ||
+    type.includes('abs')
+  ) {
+    return 'reps_only';
+  }
+
+  // 5. Default is Machine / Weighted exercises (kg & reps)
+  return 'machine_weight';
 }
 
 export function makeDefaultSets(
   count: number,
-  reps: string,
-  weight: string,
+  reps: string = '10',
+  weight: string = '',
+  category: ExerciseCategory = 'machine_weight',
+  minutes: string = '20',
+  calories: string = '150',
 ): SetEntry[] {
   return Array.from({ length: Math.max(count, 1) }, (_, i) => ({
     id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-    reps,
-    weight,
+    reps: category === 'cardio_time' ? '' : reps,
+    weight: category === 'reps_only' || category === 'cardio_time' ? '' : weight,
+    minutes: category === 'cardio_time' ? minutes : undefined,
+    calories: category === 'cardio_time' ? calories : undefined,
+    category,
     completed: false,
   }));
 }
+

@@ -494,3 +494,40 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* ── Category selector in modal ──────────────────────────── */
+.modal__cat-selector {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.modal__cat-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 8px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.modal__cat-btn:hover {
+  color: var(--text-1);
+}
+
+.modal__cat-btn.active {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+}

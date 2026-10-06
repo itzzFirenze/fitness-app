@@ -154,13 +154,29 @@ export function useExercises(routineId: string | undefined) {
   useEffect(() => { load(); }, [load]);
 
   const add = async (ex: Omit<Exercise, 'id' | 'order_index'>) => {
+    const { category, ...cleanEx } = ex as any;
+    const dbPayload = {
+      routine_id: cleanEx.routine_id,
+      name: cleanEx.name,
+      sets: cleanEx.sets || 3,
+      reps: cleanEx.reps ?? '',
+      weight: cleanEx.weight ?? '',
+      order_index: exercises.length,
+      set_data: cleanEx.set_data || [],
+      exercise_type: cleanEx.exercise_type || '',
+      image_url: cleanEx.image_url || '',
+    };
     const { data, error } = await supabase
       .from('exercises')
-      .insert({ ...ex, order_index: exercises.length })
+      .insert(dbPayload)
       .select()
       .single();
-    if (!error && data) setExercises(p => [...p, data as Exercise]);
-    return error;
+    if (error) {
+      console.error('Failed to add exercise to Supabase:', error);
+      return error;
+    }
+    if (data) setExercises(p => [...p, data as Exercise]);
+    return null;
   };
 
   const remove = async (id: string) => {
@@ -171,7 +187,13 @@ export function useExercises(routineId: string | undefined) {
   const update = async (id: string, patch: Partial<Exercise>) => {
     // Optimistically update local state first so UI reflects changes immediately
     setExercises(p => p.map(e => e.id === id ? { ...e, ...patch } : e));
-    await supabase.from('exercises').update(patch).eq('id', id);
+    const { category, ...cleanPatch } = patch as any;
+    if (Object.keys(cleanPatch).length > 0) {
+      const { error } = await supabase.from('exercises').update(cleanPatch).eq('id', id);
+      if (error) {
+        console.error('Failed to update exercise in Supabase:', error);
+      }
+    }
   };
 
   const reorder = async (index: number, direction: 'up' | 'down') => {

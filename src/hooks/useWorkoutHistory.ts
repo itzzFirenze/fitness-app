@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { MuscleGroup } from '../types';
-import { parseMuscleGroups, getExerciseMuscleGroup } from '../types';
+import type { MuscleGroup, ExerciseCategory } from '../types';
+import { parseMuscleGroups, getExerciseMuscleGroup, getExerciseCategory } from '../types';
 
 export const WORKOUT_CATEGORY_MET: Record<string, number> = {
   legs: 6.0,
@@ -34,7 +34,7 @@ export function getWorkoutCategoryMET(categoryOrGroup: string): number {
   if (str.includes('abs') || str.includes('core') || str.includes('waist') || str.includes('crunch') || str.includes('plank')) {
     return WORKOUT_CATEGORY_MET.abs;
   }
-  if (str.includes('cardio') || str.includes('run') || str.includes('cycle') || str.includes('hiit') || str.includes('bike')) {
+  if (str.includes('cardio') || str.includes('run') || str.includes('cycle') || str.includes('hiit') || str.includes('bike') || str.includes('treadmill')) {
     return WORKOUT_CATEGORY_MET.cardio;
   }
   return 5.0; // default moderate resistance training
@@ -64,8 +64,11 @@ export interface WorkoutExerciseSummary {
   completedSets: number;
   totalReps: number;
   totalWeight: number;
+  totalMinutes: number;
+  enteredCalories: number;
   estimatedCalories: number;
   exerciseType: string;
+  category: ExerciseCategory;
 }
 
 export interface WorkoutDaySummary {
@@ -166,7 +169,10 @@ export function useWorkoutHistory(year: number, month: number) {
 
         const exerciseSummaries: WorkoutExerciseSummary[] = routineExercises.map(ex => {
           const setData = Array.isArray(ex.set_data) ? ex.set_data : [];
+          const category = getExerciseCategory(ex);
           const completedSets = setData.filter((s: any) => s.completed).length;
+
+          // For strength / bodyweight
           const totalReps = setData
             .filter((s: any) => s.completed)
             .reduce((sum: number, s: any) => sum + (parseInt(s.reps) || 0), 0);
@@ -178,13 +184,40 @@ export function useWorkoutHistory(year: number, month: number) {
               return sum + reps * weight;
             }, 0);
 
-          // MET-based calculation: calories = MET × bodyWeightKg × durationHours
-          // If duration is unavailable, estimate from total sets (~2.5–3 min/set including rest)
-          const activeSets = completedSets > 0 ? completedSets : (routine.completed ? setData.length : 0);
-          const exerciseDurationHours = (activeSets * MINUTES_PER_SET) / 60;
+          // For cardio / time-based
+          const activeSetList = completedSets > 0
+            ? setData.filter((s: any) => s.completed)
+            : (routine.completed ? setData : setData.filter((s: any) => (parseFloat(s.calories) > 0) || (parseFloat(s.minutes) > 0)));
+
+          const enteredCalories = activeSetList
+            .reduce((sum: number, s: any) => sum + (parseFloat(s.calories) || 0), 0);
+
+          const totalMinutes = activeSetList
+            .reduce((sum: number, s: any) => sum + (parseFloat(s.minutes) || 0), 0);
+
+          const plannedMinutes = setData
+            .reduce((sum: number, s: any) => sum + (parseFloat(s.minutes) || 0), 0);
+
           const resolvedCategory = getExerciseMuscleGroup(ex, routine.muscle_group);
           const exerciseMET = getWorkoutCategoryMET(resolvedCategory);
-          const exerciseCalories = Math.round(exerciseMET * bodyWeightKg * exerciseDurationHours);
+
+          let exerciseCalories = 0;
+          if (category === 'cardio_time') {
+            const effectiveMinutes = totalMinutes > 0 ? totalMinutes : (routine.completed ? plannedMinutes : 0);
+            if (enteredCalories > 0) {
+              // Exact user-entered calories burned!
+              exerciseCalories = Math.round(enteredCalories);
+            } else if (effectiveMinutes > 0) {
+              // Estimated calories from minutes spent & MET
+              const durationHours = effectiveMinutes / 60;
+              exerciseCalories = Math.round(exerciseMET * bodyWeightKg * durationHours);
+            }
+          } else {
+            // Machine weight or Reps only
+            const activeSets = completedSets > 0 ? completedSets : (routine.completed ? setData.length : 0);
+            const exerciseDurationHours = (activeSets * MINUTES_PER_SET) / 60;
+            exerciseCalories = Math.round(exerciseMET * bodyWeightKg * exerciseDurationHours);
+          }
 
           return {
             name: ex.name,
@@ -192,21 +225,36 @@ export function useWorkoutHistory(year: number, month: number) {
             completedSets,
             totalReps,
             totalWeight,
+            totalMinutes,
+            enteredCalories,
             estimatedCalories: exerciseCalories,
             exerciseType: ex.exercise_type || '',
+            category,
           };
         });
 
         const totalSets = exerciseSummaries.reduce((s, e) => s + e.completedSets, 0);
         const totalVolume = exerciseSummaries.reduce((s, e) => s + e.totalWeight, 0);
 
-        // Estimate duration from total completed sets (~2.5–3 min/set) or planned sets if routine completed
-        const activeOrPlannedSets = totalSets > 0
-          ? totalSets
-          : (routine.completed ? exerciseSummaries.reduce((s, e) => s + e.sets, 0) : 0);
+        // Duration estimation: cardio minutes + strength sets * MINUTES_PER_SET
+        const cardioMinutes = exerciseSummaries
+          .filter(e => e.category === 'cardio_time')
+          .reduce((sum, e) => sum + (e.totalMinutes > 0 ? e.totalMinutes : (routine.completed ? e.sets * 20 : 0)), 0);
+
+        const strengthCompletedSets = exerciseSummaries
+          .filter(e => e.category !== 'cardio_time')
+          .reduce((sum, e) => sum + e.completedSets, 0);
+
+        const strengthPlannedSets = exerciseSummaries
+          .filter(e => e.category !== 'cardio_time')
+          .reduce((sum, e) => sum + e.sets, 0);
+
+        const activeStrengthSets = strengthCompletedSets > 0 ? strengthCompletedSets : (routine.completed ? strengthPlannedSets : 0);
+        const strengthMinutes = activeStrengthSets * MINUTES_PER_SET;
+
         const durationEstimate = Math.round(
-          activeOrPlannedSets > 0
-            ? activeOrPlannedSets * MINUTES_PER_SET
+          (cardioMinutes + strengthMinutes) > 0
+            ? (cardioMinutes + strengthMinutes)
             : Math.max(routineExercises.length * 8, 20)
         );
         const dayDurationHours = durationEstimate / 60;

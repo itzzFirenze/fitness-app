@@ -168,6 +168,24 @@
   border-color: var(--accent);
 }
 
+.ec__selector-pill--copy {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.ec__selector-pill--copy:hover {
+  border-color: #10b981;
+}
+
+.ec__selector-pill--category {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.ec__selector-pill--category:hover {
+  border-color: #f59e0b;
+}
+
 .ec__selector-tag {
   font-size: 0.7rem;
   line-height: 1;
@@ -176,6 +194,7 @@
 }
 
 .ec__type-select,
+.ec__cat-select,
 .ec__day-select {
   font-size: 0.64rem;
   font-weight: 700;
@@ -191,13 +210,53 @@
 .ec__day-select {
   color: var(--accent);
   font-weight: 600;
+  max-width: 105px;
+}
+
+.ec__day-select--copy {
+  color: #10b981;
+}
+
+.ec__cat-select {
+  color: #f59e0b;
   max-width: 110px;
 }
 
 .ec__type-select option,
+.ec__cat-select option,
 .ec__day-select option {
   background: var(--surface);
   color: var(--text-1);
+}
+
+.ec__meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ec__pill--cardio {
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.ec__pill--reps {
+  background: rgba(129, 140, 248, 0.1);
+  color: #818cf8;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.ec__pill--weight {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-3);
+  padding: 1px 6px;
+  border-radius: 999px;
 }
 
 /* ── Action icons ────────────────────────────────────────── */
@@ -421,6 +480,43 @@
   }
 }
 
+/* ── Mode Switcher ───────────────────────────────────────── */
+.ec__mode-selector {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  margin-bottom: 10px;
+  gap: 2px;
+}
+
+.ec__mode-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.ec__mode-btn:hover {
+  color: var(--text-1);
+}
+
+.ec__mode-btn.active {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
 /* ── Set table ───────────────────────────────────────────── */
 .set-table {
   width: 100%;
@@ -428,10 +524,9 @@
 
 .set-head {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 22px;
   gap: 6px;
   padding: 6px 2px 5px;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
   color: var(--text-3);
   letter-spacing: 0.8px;
@@ -440,9 +535,23 @@
   margin-bottom: 2px;
 }
 
+.set-head--weight,
+.set-row--weight {
+  grid-template-columns: 26px 1fr 1fr 28px 22px;
+}
+
+.set-head--reps,
+.set-row--reps {
+  grid-template-columns: 26px 1fr 28px 22px;
+}
+
+.set-head--cardio,
+.set-row--cardio {
+  grid-template-columns: 28px 1fr 1fr 28px 22px;
+}
+
 .set-row {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 22px;
   gap: 6px;
   align-items: center;
   padding: 4px 2px;
@@ -455,7 +564,7 @@
 }
 
 .set-row--done {
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .set-num {
@@ -464,6 +573,13 @@
   color: var(--text-3);
   text-align: center;
   line-height: 1;
+}
+
+.set-inp-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .set-inp {
@@ -482,6 +598,21 @@
   box-sizing: border-box;
 }
 
+.set-inp--cardio {
+  padding-right: 28px !important;
+  text-align: right;
+}
+
+.set-unit {
+  position: absolute;
+  right: 7px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-3);
+  pointer-events: none;
+  text-transform: lowercase;
+}
+
 .set-inp:focus {
   border-color: var(--accent-border);
   background: var(--accent-dim);
@@ -492,14 +623,14 @@
   color: var(--text-3);
 }
 
-.set-chk {
+.set-chk-btn {
   width: 26px;
   height: 26px;
   border-radius: 50%;
   border: 1.5px solid var(--border);
   background: transparent;
   color: transparent;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
   display: flex;
@@ -507,14 +638,15 @@
   justify-content: center;
   transition: all 0.18s;
   padding: 0;
+  margin: 0 auto;
 }
 
-.set-chk:hover {
+.set-chk-btn:hover {
   border-color: var(--accent-border);
   color: var(--accent);
 }
 
-.set-chk--done {
+.set-chk-btn--done {
   border-color: rgba(62, 207, 142, 0.45);
   background: var(--green-dim);
   color: var(--green);
@@ -540,6 +672,8 @@
   opacity: 0.2;
   cursor: not-allowed;
 }
+
+
 
 .set-add-btn {
   width: 100%;

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Trash2, Menu, RotateCcw } from 'lucide-react';
-import type { Exercise, SetEntry, MuscleGroup, Routine } from '../types';
-import { makeDefaultSets, getExerciseMuscleGroup, parseMuscleGroups, ALL_WORKOUT_GROUPS } from '../types';
+import type { Exercise, SetEntry, MuscleGroup, Routine, ExerciseCategory } from '../types';
+import { makeDefaultSets, getExerciseMuscleGroup, parseMuscleGroups, ALL_WORKOUT_GROUPS, getExerciseCategory } from '../types';
 import { muscleConfig } from './MuscleGroupBadge';
 import { supabase } from '../lib/supabase';
 import SecureImage from './SecureImage';
@@ -17,13 +17,21 @@ interface Props {
   isPendingDelete?: boolean;
   routines?: Routine[];
   onMoveToRoutine?: (exerciseId: string, targetRoutineId: string) => void;
+  onCopyToRoutine?: (exerciseId: string, targetRoutineId: string) => void;
 }
 
 const FALLBACK_TYPE = { emoji: '🏋️', color: '#818cf8', bg: '#1e1b4b' };
 
-function getEffectiveSets(ex: Exercise): SetEntry[] {
-  if (Array.isArray(ex.set_data) && ex.set_data.length > 0) return ex.set_data;
-  return makeDefaultSets(ex.sets ?? 3, ex.reps ?? '10', ex.weight ?? '');
+function getEffectiveSets(ex: Exercise, category: ExerciseCategory): SetEntry[] {
+  if (Array.isArray(ex.set_data) && ex.set_data.length > 0) {
+    return ex.set_data.map(s => ({
+      ...s,
+      category: s.category || category,
+      minutes: s.minutes ?? (category === 'cardio_time' ? '20' : undefined),
+      calories: s.calories ?? (category === 'cardio_time' ? '150' : undefined),
+    }));
+  }
+  return makeDefaultSets(ex.sets ?? 3, ex.reps ?? '10', ex.weight ?? '', category);
 }
 
 function uid() {
@@ -40,6 +48,7 @@ export default function ExerciseCard({
   isPendingDelete,
   routines,
   onMoveToRoutine,
+  onCopyToRoutine,
 }: Props) {
   const [expanded,     setExpanded]     = useState(false);
   const [nameDraft,    setNameDraft]    = useState(ex.name);
@@ -62,25 +71,64 @@ export default function ExerciseCard({
   const specificArea  = getExerciseMuscleGroup(ex, muscleGroup);
   const routineGroups = parseMuscleGroups(muscleGroup).filter(g => g !== 'Rest');
   const cfg           = muscleConfig[specificArea as MuscleGroup] ?? FALLBACK_TYPE;
-  const sets          = getEffectiveSets(ex);
+  const category      = getExerciseCategory(ex);
+  const sets          = getEffectiveSets(ex, category);
   const hasImage      = Boolean(ex.image_url);
   const allCompleted  = sets.length > 0 && sets.every(s => s.completed);
+
+  const cardioTotals = {
+    minutes: sets.reduce((sum, s) => sum + (parseFloat(s.minutes ?? '') || 0), 0),
+    calories: sets.reduce((sum, s) => sum + (parseFloat(s.calories ?? '') || 0), 0),
+  };
 
   /* ── Set helpers ─────────────────────────────────────── */
   const saveSets = (next: SetEntry[]) =>
     onUpdate(ex.id, { set_data: next, sets: next.length });
+
+  const handleCategoryChange = (newCat: ExerciseCategory) => {
+    const updatedSets = sets.map(s => ({
+      ...s,
+      category: newCat,
+      minutes: newCat === 'cardio_time' ? (s.minutes || '20') : s.minutes,
+      calories: newCat === 'cardio_time' ? (s.calories || '150') : s.calories,
+    }));
+    const patch: Partial<Exercise> = {
+      category: newCat,
+      set_data: updatedSets,
+      sets: updatedSets.length,
+    };
+    if (newCat === 'cardio_time' && (!ex.exercise_type || ex.exercise_type.toLowerCase() === 'strength')) {
+      patch.exercise_type = 'Cardio';
+    }
+    onUpdate(ex.id, patch);
+  };
 
   const toggleAllSets = () => {
     const nextState = !allCompleted;
     saveSets(sets.map(s => ({ ...s, completed: nextState })));
   };
 
-  const patchSet = (id: string, field: 'reps' | 'weight', val: string) =>
-    saveSets(sets.map(s => s.id === id ? { ...s, [field]: val } : s));
+  const toggleSetComplete = (id: string) => {
+    saveSets(sets.map(s => (s.id === id ? { ...s, completed: !s.completed } : s)));
+  };
+
+  const patchSet = (id: string, field: 'reps' | 'weight' | 'minutes' | 'calories', val: string) =>
+    saveSets(sets.map(s => (s.id === id ? { ...s, [field]: val } : s)));
 
   const addSet = () => {
     const last = sets[sets.length - 1];
-    saveSets([...sets, { id: uid(), reps: last?.reps ?? '10', weight: last?.weight ?? '', completed: false }]);
+    saveSets([
+      ...sets,
+      {
+        id: uid(),
+        reps: category === 'cardio_time' ? '' : (last?.reps ?? '10'),
+        weight: category === 'reps_only' || category === 'cardio_time' ? '' : (last?.weight ?? ''),
+        minutes: category === 'cardio_time' ? (last?.minutes ?? '20') : undefined,
+        calories: category === 'cardio_time' ? (last?.calories ?? '150') : undefined,
+        category,
+        completed: false,
+      },
+    ]);
   };
 
   const deleteSet = (id: string) => {
@@ -210,9 +258,20 @@ export default function ExerciseCard({
                   </select>
                 </div>
 
+                <div className="ec__selector-pill ec__selector-pill--category" title="Change tracking group: weights, reps only, or cardio">
+                  <select
+                    className="ec__cat-select"
+                    value={category}
+                    onChange={e => handleCategoryChange(e.target.value as ExerciseCategory)}
+                  >
+                    <option value="machine_weight">Weights & Reps</option>
+                    <option value="reps_only">Reps Only</option>
+                    <option value="cardio_time">Cardio / Time</option>
+                  </select>
+                </div>
+
                 {onMoveToRoutine && routines && routines.length > 1 && (
                   <div className="ec__selector-pill ec__selector-pill--day" title="Move exercise to another day">
-                    <span className="ec__selector-tag">📅</span>
                     <select
                       className="ec__day-select"
                       defaultValue=""
@@ -235,9 +294,44 @@ export default function ExerciseCard({
                     </select>
                   </div>
                 )}
+
+                {onCopyToRoutine && routines && routines.length > 0 && (
+                  <div className="ec__selector-pill ec__selector-pill--copy" title="Copy exercise to another day">
+                    <select
+                      className="ec__day-select ec__day-select--copy"
+                      defaultValue=""
+                      onChange={e => {
+                        const targetId = e.target.value;
+                        if (targetId) {
+                          onCopyToRoutine(ex.id, targetId);
+                          e.target.value = '';
+                        }
+                      }}
+                    >
+                      <option value="" disabled>Copy to day…</option>
+                      {routines.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {r.day} {r.id === ex.routine_id ? '(Duplicate)' : `(${r.muscle_group})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             ) : (
-              <span className="ec__type" style={{ color: cfg.color }}>{specificArea}</span>
+              <div className="ec__meta-badges">
+                <span className="ec__type" style={{ color: cfg.color }}>{specificArea}</span>
+                {category === 'cardio_time' ? (
+                  <span className="ec__pill ec__pill--cardio">
+                    {cardioTotals.minutes > 0 ? `${cardioTotals.minutes} min` : 'Cardio'}
+                    {cardioTotals.calories > 0 ? ` · ${cardioTotals.calories} kcal` : ''}
+                  </span>
+                ) : category === 'reps_only' ? (
+                  <span className="ec__pill ec__pill--reps">Reps only</span>
+                ) : (
+                  <span className="ec__pill ec__pill--weight">{sets.length} sets</span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -337,26 +431,147 @@ export default function ExerciseCard({
       {/* Set tracker */}
       {expanded && (
         <div className="ec__body">
-          <div className="set-table">
-            <div className="set-head">
-              <span>SET</span>
-              <span>REPS</span>
-              <span>WEIGHT</span>
-              <span></span>
-            </div>
-            {sets.map((s, i) => (
-              <div key={s.id} className={`set-row ${allCompleted ? 'set-row--done' : ''}`}>
-                <span className="set-num">{i + 1}</span>
-                <input className="set-inp" value={s.reps} placeholder="reps"
-                  onChange={e => patchSet(s.id, 'reps', e.target.value)} />
-                <input className="set-inp" value={s.weight} placeholder="kg"
-                  onChange={e => patchSet(s.id, 'weight', e.target.value)} />
-                <button className="set-rm" onClick={() => deleteSet(s.id)}
-                  disabled={sets.length <= 1}>×</button>
-              </div>
-            ))}
+          {/* Quick mode switcher */}
+          <div className="ec__mode-selector">
+            <button
+              type="button"
+              className={`ec__mode-btn ${category === 'machine_weight' ? 'active' : ''}`}
+              onClick={() => handleCategoryChange('machine_weight')}
+              title="Weights & Reps (machine / weights)"
+            >
+              Weight & Reps
+            </button>
+            <button
+              type="button"
+              className={`ec__mode-btn ${category === 'reps_only' ? 'active' : ''}`}
+              onClick={() => handleCategoryChange('reps_only')}
+              title="Reps only (bench dip / pushups)"
+            >
+              Reps Only
+            </button>
+            <button
+              type="button"
+              className={`ec__mode-btn ${category === 'cardio_time' ? 'active' : ''}`}
+              onClick={() => handleCategoryChange('cardio_time')}
+              title="Time & Calories (treadmill / cardio)"
+            >
+              Minutes & Calories
+            </button>
           </div>
-          <button className="set-add-btn" onClick={addSet}>+ Add Set</button>
+
+          {category === 'cardio_time' ? (
+            <>
+              <div className="set-table">
+                <div className="set-head set-head--cardio">
+                  <span>SESSION</span>
+                  <span>MINUTES</span>
+                  <span>CALORIES</span>
+                  <span></span>
+                  <span></span>
+                </div>
+                {sets.map((s, i) => (
+                  <div key={s.id} className={`set-row set-row--cardio ${s.completed ? 'set-row--done' : ''}`}>
+                    <span className="set-num">{i + 1}</span>
+                    <div className="set-inp-wrap">
+                      <input
+                        className="set-inp set-inp--cardio"
+                        value={s.minutes ?? ''}
+                        placeholder="30"
+                        type="number"
+                        min={1}
+                        onChange={e => patchSet(s.id, 'minutes', e.target.value)}
+                      />
+                      <span className="set-unit">min</span>
+                    </div>
+                    <div className="set-inp-wrap">
+                      <input
+                        className="set-inp set-inp--cardio"
+                        value={s.calories ?? ''}
+                        placeholder="250"
+                        type="number"
+                        min={0}
+                        onChange={e => patchSet(s.id, 'calories', e.target.value)}
+                      />
+                      <span className="set-unit">kcal</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`set-chk-btn ${s.completed ? 'set-chk-btn--done' : ''}`}
+                      onClick={() => toggleSetComplete(s.id)}
+                      title={s.completed ? "Mark incomplete" : "Mark completed"}
+                    >
+                      ✓
+                    </button>
+                    <button className="set-rm" onClick={() => deleteSet(s.id)}
+                      disabled={sets.length <= 1}>×</button>
+                  </div>
+                ))}
+              </div>
+
+              <button className="set-add-btn" onClick={addSet}>+ Add Session / Interval</button>
+            </>
+          ) : category === 'reps_only' ? (
+            <>
+              <div className="set-table">
+                <div className="set-head set-head--reps">
+                  <span>SET</span>
+                  <span>REPS (NO WEIGHT)</span>
+                  <span></span>
+                  <span></span>
+                </div>
+                {sets.map((s, i) => (
+                  <div key={s.id} className={`set-row set-row--reps ${s.completed ? 'set-row--done' : ''}`}>
+                    <span className="set-num">{i + 1}</span>
+                    <input className="set-inp" value={s.reps} placeholder="reps (e.g. 15)"
+                      onChange={e => patchSet(s.id, 'reps', e.target.value)} />
+                    <button
+                      type="button"
+                      className={`set-chk-btn ${s.completed ? 'set-chk-btn--done' : ''}`}
+                      onClick={() => toggleSetComplete(s.id)}
+                      title={s.completed ? "Mark incomplete" : "Mark completed"}
+                    >
+                      ✓
+                    </button>
+                    <button className="set-rm" onClick={() => deleteSet(s.id)}
+                      disabled={sets.length <= 1}>×</button>
+                  </div>
+                ))}
+              </div>
+              <button className="set-add-btn" onClick={addSet}>+ Add Set</button>
+            </>
+          ) : (
+            <>
+              <div className="set-table">
+                <div className="set-head set-head--weight">
+                  <span>SET</span>
+                  <span>REPS</span>
+                  <span>WEIGHT (KG)</span>
+                  <span></span>
+                  <span></span>
+                </div>
+                {sets.map((s, i) => (
+                  <div key={s.id} className={`set-row set-row--weight ${s.completed ? 'set-row--done' : ''}`}>
+                    <span className="set-num">{i + 1}</span>
+                    <input className="set-inp" value={s.reps} placeholder="reps"
+                      onChange={e => patchSet(s.id, 'reps', e.target.value)} />
+                    <input className="set-inp" value={s.weight} placeholder="kg"
+                      onChange={e => patchSet(s.id, 'weight', e.target.value)} />
+                    <button
+                      type="button"
+                      className={`set-chk-btn ${s.completed ? 'set-chk-btn--done' : ''}`}
+                      onClick={() => toggleSetComplete(s.id)}
+                      title={s.completed ? "Mark incomplete" : "Mark completed"}
+                    >
+                      ✓
+                    </button>
+                    <button className="set-rm" onClick={() => deleteSet(s.id)}
+                      disabled={sets.length <= 1}>×</button>
+                  </div>
+                ))}
+              </div>
+              <button className="set-add-btn" onClick={addSet}>+ Add Set</button>
+            </>
+          )}
         </div>
       )}
 

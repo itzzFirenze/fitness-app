@@ -6,7 +6,7 @@ import { useRoutines, useExercises } from '../hooks/useRoutines';
 import ExerciseCard from '../components/ExerciseCard';
 import ExerciseSearchModal from '../components/ExerciseSearchModal';
 import { MuscleGroupBadges, muscleConfig } from '../components/MuscleGroupBadge';
-import type { MuscleGroup } from '../types';
+import type { MuscleGroup, Exercise } from '../types';
 import { parseMuscleGroups, isRestRoutine, ALL_WORKOUT_GROUPS } from '../types';
 import { supabase } from '../lib/supabase';
 import './RoutinePage.css';
@@ -134,6 +134,59 @@ export default function RoutinePage() {
          setTimeout(() => setMoveToast(null), 3500);
       },
       [routines, localExercises, refetch]
+   );
+
+   const handleCopyExerciseToRoutine = useCallback(
+      async (exerciseId: string, targetRoutineId: string) => {
+         const targetRoutine = routines.find(r => r.id === targetRoutineId);
+         const exToCopy = localExercises.find(e => e.id === exerciseId);
+         if (!targetRoutine || !exToCopy) return;
+
+         // Get count in target routine to place at the end
+         const { count } = await supabase
+            .from('exercises')
+            .select('id', { count: 'exact', head: true })
+            .eq('routine_id', targetRoutineId);
+
+         // Generate fresh set IDs with uncompleted status
+         const cleanSets = (exToCopy.set_data || []).map((s, idx) => ({
+            ...s,
+            id: `s-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+            completed: false,
+         }));
+
+         const copyPayload = {
+            routine_id: targetRoutineId,
+            name: exToCopy.name,
+            sets: exToCopy.sets || 3,
+            reps: exToCopy.reps || '10',
+            weight: exToCopy.weight || '',
+            order_index: count ?? 99,
+            set_data: cleanSets,
+            exercise_type: exToCopy.exercise_type || '',
+            image_url: exToCopy.image_url || '',
+         };
+
+         const { data, error } = await supabase
+            .from('exercises')
+            .insert(copyPayload)
+            .select()
+            .single();
+
+         if (error) {
+            console.error('Failed to copy exercise:', error);
+            return;
+         }
+
+         if (targetRoutineId === routine?.id && data) {
+            setLocalExercises(prev => [...prev, data as Exercise]);
+         }
+
+         refetch();
+         setMoveToast(`Copied "${exToCopy.name}" to ${targetRoutine.day}`);
+         setTimeout(() => setMoveToast(null), 3500);
+      },
+      [routines, localExercises, refetch, routine?.id]
    );
 
    // Auto-complete routine when all exercises are done
@@ -316,6 +369,7 @@ export default function RoutinePage() {
                                                    isPendingDelete={pendingDeleteIds.has(ex.id)}
                                                    routines={routines}
                                                    onMoveToRoutine={handleMoveExerciseToRoutine}
+                                                   onCopyToRoutine={handleCopyExerciseToRoutine}
                                                 />
                                              </div>
                                           )}

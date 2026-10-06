@@ -159,7 +159,7 @@ export default function CalendarPage() {
             <span className="cal__stat-value">
               {formatCalories(Array.from(history.values()).reduce((s, d) => s + d.estimatedCalories, 0))}
             </span>
-            <span className="cal__stat-label">Est. Calories</span>
+            <span className="cal__stat-label">Calories Burned</span>
           </div>
           <div className="cal__stat-divider" />
           <div className="cal__stat">
@@ -274,7 +274,7 @@ export default function CalendarPage() {
                 </span>
                 <div>
                   <span className="cal__details-stat-value">~{selectedDay.estimatedCalories}</span>
-                  <span className="cal__details-stat-label">Calories</span>
+                  <span className="cal__details-stat-label">Calories Burned</span>
                 </div>
               </div>
               {selectedDay.durationEstimate > 0 && (
@@ -300,9 +300,27 @@ export default function CalendarPage() {
                       <span className="cal__exercise-name">{ex.name}</span>
                       <div className="cal__exercise-meta">
                         <ExerciseTypeDot name={ex.name} type={ex.exerciseType} />
-                        <span>{ex.completedSets}/{ex.sets} sets</span>
-                        {ex.totalReps > 0 && <span>·</span>}
-                        {ex.totalReps > 0 && <span>{ex.totalReps} reps</span>}
+                        {ex.category === 'cardio_time' ? (
+                          <>
+                            <span>{ex.totalMinutes > 0 ? `${ex.totalMinutes} min` : `${ex.completedSets}/${ex.sets} sessions`}</span>
+                            {ex.enteredCalories > 0 && <span>·</span>}
+                            {ex.enteredCalories > 0 && <span>{ex.enteredCalories} kcal</span>}
+                          </>
+                        ) : ex.category === 'reps_only' ? (
+                          <>
+                            <span>{ex.completedSets}/{ex.sets} sets</span>
+                            {ex.totalReps > 0 && <span>·</span>}
+                            {ex.totalReps > 0 && <span>{ex.totalReps} reps</span>}
+                          </>
+                        ) : (
+                          <>
+                            <span>{ex.completedSets}/{ex.sets} sets</span>
+                            {ex.totalReps > 0 && <span>·</span>}
+                            {ex.totalReps > 0 && <span>{ex.totalReps} reps</span>}
+                            {ex.totalWeight > 0 && <span>·</span>}
+                            {ex.totalWeight > 0 && <span>{Math.round(ex.totalWeight)} kg</span>}
+                          </>
+                        )}
                       </div>
                     </div>
                     {ex.estimatedCalories > 0 && (

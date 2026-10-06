@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Pencil, Search } from 'lucide-react';
-import type { Exercise, MuscleGroup } from '../types';
-import { makeDefaultSets, ALL_WORKOUT_GROUPS } from '../types';
+import type { Exercise, MuscleGroup, ExerciseCategory } from '../types';
+import { makeDefaultSets, ALL_WORKOUT_GROUPS, getExerciseCategory } from '../types';
 import { fetchExercises, MUSCLE_MAP, type ApiExercise } from '../lib/exercisesApi';
 import { ensureGifSavedToSupabase } from '../lib/gifStorage';
 import SecureImage from './SecureImage';
@@ -26,15 +26,45 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
    const [saving, setSaving] = useState(false);
    const [gifLoaded, setGifLoaded] = useState(false);
 
-   // Manual form
-   const [manual, setManual] = useState({ name: '', sets: 3, reps: '10', weight: '' });
+   const [userSelectedCat, setUserSelectedCat] = useState(false);
+
+   // Manual form with category, minutes, calories
+   const [manual, setManual] = useState<{
+      name: string;
+      sets: number;
+      reps: string;
+      weight: string;
+      minutes: string;
+      calories: string;
+      category: ExerciseCategory;
+   }>({
+      name: '',
+      sets: 3,
+      reps: '10',
+      weight: '',
+      minutes: '30',
+      calories: '250',
+      category: 'machine_weight',
+   });
 
    // Details form (after picking from API)
-   const [details, setDetails] = useState({ sets: 3, reps: '10', weight: '' });
+   const [details, setDetails] = useState<{
+      sets: number;
+      reps: string;
+      weight: string;
+      minutes: string;
+      calories: string;
+      category: ExerciseCategory;
+   }>({
+      sets: 3,
+      reps: '10',
+      weight: '',
+      minutes: '30',
+      calories: '250',
+      category: 'machine_weight',
+   });
 
    const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-   // Auto-load removed: only load when user explicitly searches
 
    const searchApi = async (name: string, muscle?: string) => {
       setSearching(true);
@@ -51,10 +81,6 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
 
    const handleQueryChange = (val: string) => {
       setQuery(val);
-      if (!val.trim()) {
-         // Optionally, could clear results if search is empty, but we'll leave it
-         // to only search if there's text.
-      }
       clearTimeout(debounceRef.current);
       if (val.trim()) {
          debounceRef.current = setTimeout(() => searchApi(val), 600);
@@ -66,12 +92,21 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
    const handleSelect = (ex: ApiExercise) => {
       setSelected(ex);
       setGifLoaded(false);
-      setDetails({ sets: 3, reps: '10', weight: '' });
+      const cat = getExerciseCategory({ name: ex.name, exercise_type: ex.bodyPart });
+      setDetails({
+         sets: 3,
+         reps: '10',
+         weight: '',
+         minutes: '30',
+         calories: '250',
+         category: cat,
+      });
    };
 
    const handleConfirmApi = async () => {
       if (!selected) return;
       setSaving(true);
+      setApiError('');
       let imageUrl = selected.gifUrl ?? '';
       if (imageUrl) {
          try {
@@ -80,30 +115,78 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
             console.warn('Failed to ensure GIF in Supabase:', err);
          }
       }
-      await onAdd({
+      const err = await onAdd({
          routine_id: routineId,
          name: selected.name,
-         exercise_type: selected.bodyPart,
+         exercise_type: details.category === 'cardio_time' ? 'Cardio' : selected.bodyPart,
          image_url: imageUrl,
-         set_data: makeDefaultSets(details.sets, details.reps, details.weight),
-         ...details,
+         sets: details.sets,
+         reps: details.category === 'cardio_time' ? '' : (details.reps || '10'),
+         weight: details.category === 'machine_weight' ? (details.weight || '') : '',
+         set_data: makeDefaultSets(
+            details.sets,
+            details.reps || '10',
+            details.weight || '',
+            details.category,
+            details.minutes,
+            details.calories,
+         ),
       });
       setSaving(false);
-      setSelected(null);
+      if (err) {
+         setApiError(typeof err === 'object' && 'message' in (err as any) ? (err as any).message : 'Failed to add exercise');
+      } else {
+         setSelected(null);
+         onClose();
+      }
+   };
+
+   const handleManualNameChange = (val: string) => {
+      const inferred = getExerciseCategory({ name: val });
+      setManual(prev => ({
+         ...prev,
+         name: val,
+         // only auto-switch if user hasn't explicitly chosen a category button
+         category: userSelectedCat ? prev.category : inferred,
+      }));
    };
 
    const handleManualAdd = async () => {
       if (!manual.name.trim()) return;
       setSaving(true);
-      await onAdd({
+      setApiError('');
+      const err = await onAdd({
          routine_id: routineId,
-         exercise_type: 'strength',
+         name: manual.name.trim(),
+         exercise_type: manual.category === 'cardio_time' ? 'Cardio' : 'strength',
          image_url: '',
-         set_data: makeDefaultSets(manual.sets, manual.reps, manual.weight),
-         ...manual,
+         sets: manual.sets,
+         reps: manual.category === 'cardio_time' ? '' : (manual.reps || '10'),
+         weight: manual.category === 'machine_weight' ? (manual.weight || '') : '',
+         set_data: makeDefaultSets(
+            manual.sets,
+            manual.reps || '10',
+            manual.weight || '',
+            manual.category,
+            manual.minutes,
+            manual.calories,
+         ),
       });
       setSaving(false);
-      setManual({ name: '', sets: 3, reps: '10', weight: '' });
+      if (err) {
+         setApiError(typeof err === 'object' && 'message' in (err as any) ? (err as any).message : 'Failed to add exercise');
+      } else {
+         setManual({
+            name: '',
+            sets: 3,
+            reps: '10',
+            weight: '',
+            minutes: '30',
+            calories: '250',
+            category: 'machine_weight',
+         });
+         onClose();
+      }
    };
 
    return (
@@ -172,22 +255,82 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
                            </p>
                         )}
 
+                        {/* Category selection */}
+                        <div className="modal__cat-selector">
+                           <button
+                              type="button"
+                              className={`modal__cat-btn ${details.category === 'machine_weight' ? 'active' : ''}`}
+                              onClick={() => setDetails({ ...details, category: 'machine_weight' })}
+                           >
+                              Weights & Reps
+                           </button>
+                           <button
+                              type="button"
+                              className={`modal__cat-btn ${details.category === 'reps_only' ? 'active' : ''}`}
+                              onClick={() => setDetails({ ...details, category: 'reps_only' })}
+                           >
+                              Reps Only
+                           </button>
+                           <button
+                              type="button"
+                              className={`modal__cat-btn ${details.category === 'cardio_time' ? 'active' : ''}`}
+                              onClick={() => setDetails({ ...details, category: 'cardio_time' })}
+                           >
+                              Cardio / Time
+                           </button>
+                        </div>
+
                         <div className="detail-grid">
-                           <div className="ec-field">
-                              <label>Sets</label>
-                              <input type="number" min={1} value={details.sets}
-                                 onChange={e => setDetails({ ...details, sets: +e.target.value })} />
-                           </div>
-                           <div className="ec-field">
-                              <label>Reps</label>
-                              <input value={details.reps} placeholder="8-12"
-                                 onChange={e => setDetails({ ...details, reps: e.target.value })} />
-                           </div>
-                           <div className="ec-field">
-                              <label>Weight</label>
-                              <input value={details.weight} placeholder="e.g. 60kg"
-                                 onChange={e => setDetails({ ...details, weight: e.target.value })} />
-                           </div>
+                           {details.category === 'cardio_time' ? (
+                              <>
+                                 <div className="ec-field">
+                                    <label>Sessions</label>
+                                    <input type="number" min={1} value={details.sets}
+                                       onChange={e => setDetails({ ...details, sets: +e.target.value })} />
+                                 </div>
+                                 <div className="ec-field">
+                                    <label>Minutes</label>
+                                    <input type="number" min={1} value={details.minutes} placeholder="30"
+                                       onChange={e => setDetails({ ...details, minutes: e.target.value })} />
+                                 </div>
+                                 <div className="ec-field">
+                                    <label>Calories (kcal)</label>
+                                    <input type="number" min={0} value={details.calories} placeholder="250"
+                                       onChange={e => setDetails({ ...details, calories: e.target.value })} />
+                                 </div>
+                              </>
+                           ) : details.category === 'reps_only' ? (
+                              <>
+                                 <div className="ec-field">
+                                    <label>Sets</label>
+                                    <input type="number" min={1} value={details.sets}
+                                       onChange={e => setDetails({ ...details, sets: +e.target.value })} />
+                                 </div>
+                                 <div className="ec-field" style={{ gridColumn: 'span 2' }}>
+                                    <label>Reps (no weight)</label>
+                                    <input value={details.reps} placeholder="8-12"
+                                       onChange={e => setDetails({ ...details, reps: e.target.value })} />
+                                 </div>
+                              </>
+                           ) : (
+                              <>
+                                 <div className="ec-field">
+                                    <label>Sets</label>
+                                    <input type="number" min={1} value={details.sets}
+                                       onChange={e => setDetails({ ...details, sets: +e.target.value })} />
+                                 </div>
+                                 <div className="ec-field">
+                                    <label>Reps</label>
+                                    <input value={details.reps} placeholder="8-12"
+                                       onChange={e => setDetails({ ...details, reps: e.target.value })} />
+                                 </div>
+                                 <div className="ec-field">
+                                    <label>Weight</label>
+                                    <input value={details.weight} placeholder="e.g. 60kg"
+                                       onChange={e => setDetails({ ...details, weight: e.target.value })} />
+                                 </div>
+                              </>
+                           )}
                         </div>
                         <button className="btn-add-big" disabled={saving} onClick={handleConfirmApi}>
                            {saving ? 'Adding…' : <>+ Add to Routine</>}
@@ -274,26 +417,87 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
                         <input
                            autoFocus
                            value={manual.name}
-                           placeholder="e.g. Bench Press"
-                           onChange={e => setManual({ ...manual, name: e.target.value })}
+                           placeholder="e.g. Bench Press, Bench Dip, or Treadmill"
+                           onChange={e => handleManualNameChange(e.target.value)}
                            onKeyDown={e => e.key === 'Enter' && handleManualAdd()}
                         />
                      </div>
-                     <div className="ec-field">
-                        <label>Sets</label>
-                        <input type="number" min={1} value={manual.sets}
-                           onChange={e => setManual({ ...manual, sets: +e.target.value })} />
+
+                     {/* Category selection */}
+                     <div className="modal__cat-selector span-full">
+                        <button
+                           type="button"
+                           className={`modal__cat-btn ${manual.category === 'machine_weight' ? 'active' : ''}`}
+                           onClick={() => { setUserSelectedCat(true); setManual({ ...manual, category: 'machine_weight' }); }}
+                        >
+                           Weights & Reps
+                        </button>
+                        <button
+                           type="button"
+                           className={`modal__cat-btn ${manual.category === 'reps_only' ? 'active' : ''}`}
+                           onClick={() => { setUserSelectedCat(true); setManual({ ...manual, category: 'reps_only' }); }}
+                        >
+                           Reps Only (Bench Dip / Abs)
+                        </button>
+                        <button
+                           type="button"
+                           className={`modal__cat-btn ${manual.category === 'cardio_time' ? 'active' : ''}`}
+                           onClick={() => { setUserSelectedCat(true); setManual({ ...manual, category: 'cardio_time' }); }}
+                        >
+                           Cardio (Treadmill)
+                        </button>
                      </div>
-                     <div className="ec-field">
-                        <label>Reps</label>
-                        <input value={manual.reps} placeholder="8-12"
-                           onChange={e => setManual({ ...manual, reps: e.target.value })} />
-                     </div>
-                     <div className="ec-field">
-                        <label>Weight</label>
-                        <input value={manual.weight} placeholder="e.g. 60kg"
-                           onChange={e => setManual({ ...manual, weight: e.target.value })} />
-                     </div>
+
+                     {manual.category === 'cardio_time' ? (
+                        <>
+                           <div className="ec-field">
+                              <label>Sessions / Intervals</label>
+                              <input type="number" min={1} value={manual.sets}
+                                 onChange={e => setManual({ ...manual, sets: +e.target.value })} />
+                           </div>
+                           <div className="ec-field">
+                              <label>Minutes</label>
+                              <input type="number" min={1} value={manual.minutes} placeholder="30"
+                                 onChange={e => setManual({ ...manual, minutes: e.target.value })} />
+                           </div>
+                           <div className="ec-field">
+                              <label>Calories Burned (kcal)</label>
+                              <input type="number" min={0} value={manual.calories} placeholder="250"
+                                 onChange={e => setManual({ ...manual, calories: e.target.value })} />
+                           </div>
+                        </>
+                     ) : manual.category === 'reps_only' ? (
+                        <>
+                           <div className="ec-field">
+                              <label>Sets</label>
+                              <input type="number" min={1} value={manual.sets}
+                                 onChange={e => setManual({ ...manual, sets: +e.target.value })} />
+                           </div>
+                           <div className="ec-field" style={{ gridColumn: 'span 2' }}>
+                              <label>Reps (no weight needed)</label>
+                              <input value={manual.reps} placeholder="e.g. 15"
+                                 onChange={e => setManual({ ...manual, reps: e.target.value })} />
+                           </div>
+                        </>
+                     ) : (
+                        <>
+                           <div className="ec-field">
+                              <label>Sets</label>
+                              <input type="number" min={1} value={manual.sets}
+                                 onChange={e => setManual({ ...manual, sets: +e.target.value })} />
+                           </div>
+                           <div className="ec-field">
+                              <label>Reps</label>
+                              <input value={manual.reps} placeholder="8-12"
+                                 onChange={e => setManual({ ...manual, reps: e.target.value })} />
+                           </div>
+                           <div className="ec-field">
+                              <label>Weight</label>
+                              <input value={manual.weight} placeholder="e.g. 60kg"
+                                 onChange={e => setManual({ ...manual, weight: e.target.value })} />
+                           </div>
+                        </>
+                     )}
                   </div>
                   <button className="btn-add-big" disabled={saving || !manual.name.trim()} onClick={handleManualAdd}>
                      {saving ? 'Adding…' : <>+ Add Exercise</>}
