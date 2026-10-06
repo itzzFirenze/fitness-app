@@ -437,14 +437,14 @@ export default function ExerciseSearchModal({ routineId, muscleGroups, onAdd, on
                            className={`modal__cat-btn ${manual.category === 'reps_only' ? 'active' : ''}`}
                            onClick={() => { setUserSelectedCat(true); setManual({ ...manual, category: 'reps_only' }); }}
                         >
-                           Reps Only (Bench Dip / Abs)
+                           Reps Only
                         </button>
                         <button
                            type="button"
                            className={`modal__cat-btn ${manual.category === 'cardio_time' ? 'active' : ''}`}
                            onClick={() => { setUserSelectedCat(true); setManual({ ...manual, category: 'cardio_time' }); }}
                         >
-                           Cardio (Treadmill)
+                           Cardio
                         </button>
                      </div>
 
