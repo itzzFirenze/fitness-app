@@ -9,6 +9,12 @@ import { MuscleGroupBadges, muscleConfig } from '../components/MuscleGroupBadge'
 import type { MuscleGroup, Exercise } from '../types';
 import { parseMuscleGroups, isRestRoutine, ALL_WORKOUT_GROUPS } from '../types';
 import { supabase } from '../lib/supabase';
+import {
+   getWeekMonday,
+   formatLocalDate,
+   buildWorkoutDaySummary,
+   saveDayToHistory,
+} from '../lib/workoutHistory';
 import './RoutinePage.css';
 
 const PRESETS: { label: string; groups: MuscleGroup[] }[] = [
@@ -189,6 +195,36 @@ export default function RoutinePage() {
       [routines, localExercises, refetch, routine?.id]
    );
 
+   const handleToggleRoutineComplete = async () => {
+      if (!routine) return;
+      const nextCompleted = !routine.completed;
+      await updateRoutine(routine.id, { completed: nextCompleted });
+
+      const updated = localExercises.map(ex => {
+         const sets = Array.isArray(ex.set_data) ? ex.set_data : [];
+         const newSets = sets.map((s: any) => ({ ...s, completed: nextCompleted }));
+         return { ...ex, set_data: newSets };
+      });
+      setLocalExercises(updated);
+
+      await Promise.all(updated.map(ex =>
+         supabase.from('exercises').update({ set_data: ex.set_data }).eq('id', ex.id)
+      ));
+
+      const monday = getWeekMonday(new Date());
+      const targetDate = new Date(monday);
+      targetDate.setDate(monday.getDate() + routine.day_index);
+      const targetDateStr = formatLocalDate(targetDate);
+      const summary = buildWorkoutDaySummary(
+         { ...routine, completed: nextCompleted },
+         updated,
+         targetDateStr,
+         undefined,
+         nextCompleted
+      );
+      await saveDayToHistory(summary);
+   };
+
    // Auto-complete routine when all exercises are done
    useEffect(() => {
       if (!routine || exercises.length === 0) return;
@@ -241,9 +277,10 @@ export default function RoutinePage() {
                <button className="rp__back" onClick={() => navigate('/')}>← Week</button>
                <button
                   className={`rp__complete-btn ${routine.completed ? 'done' : ''}`}
-                  style={{ pointerEvents: 'none' }}
+                  onClick={handleToggleRoutineComplete}
+                  title={routine.completed ? 'Click to mark as pending' : 'Click to mark as completed'}
                >
-                  {routine.completed ? '✓ Completed' : '○ Pending'}
+                  {routine.completed ? '✓ Completed' : '○ Mark Completed'}
                </button>
             </div>
 

@@ -17,7 +17,7 @@ function getTodayIndex() {
 
 export default function WeekPage() {
    const navigate = useNavigate();
-   const { routines, loading, error } = useRoutines();
+   const { routines, loading, error, toggleComplete } = useRoutines();
    const { metrics, stats } = useBodyMetrics();
    const todayIndex = useMemo(() => getTodayIndex(), []);
 
@@ -151,6 +151,7 @@ export default function WeekPage() {
                      key={r.id}
                      routine={r}
                      isToday={i === todayIndex}
+                     onToggleComplete={toggleComplete}
                   />
                ))}
             </main>

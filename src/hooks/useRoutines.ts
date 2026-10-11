@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Routine, Exercise, MuscleGroup } from '../types';
 import { formatMuscleGroups } from '../types';
+import {
+  getWeekMonday,
+  formatLocalDate,
+  loadHistoryStore,
+  saveHistoryStore,
+  saveDayToHistory,
+  buildWorkoutDaySummary,
+} from '../lib/workoutHistory';
 
 const SEED_DAYS = [
   { day: 'Monday',    day_index: 0, muscle_group: 'Rest' as MuscleGroup, notes: '', completed: false },
@@ -23,38 +31,78 @@ export function useRoutines() {
     setLoading(true);
     setError(null);
 
-    // --- Weekly Reset Logic (stored in Supabase so all devices share the same state) ---
+    // --- Weekly Reset Logic (Stored in Supabase, week runs Monday to Sunday) ---
     try {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() - d.getDay()); // Get most recent Sunday
-      const currentSunday = d.toISOString().split('T')[0];
+      // The week begins on MONDAY (day_index 0) and ends on SUNDAY (day_index 6).
+      // Sunday is day 7 of the workout week. Weekly reset MUST trigger on Monday, not Sunday!
+      const currentMonday = getWeekMonday(new Date());
+      const currentMondayStr = formatLocalDate(currentMonday);
 
-      // Read the last reset date from Supabase (shared across devices)
+      // Read the last reset date from Supabase
       const { data: configRow } = await supabase
         .from('app_config')
         .select('value')
-        .eq('key', 'last_reset_sunday')
+        .eq('key', 'last_reset_monday')
         .maybeSingle();
 
       const lastReset = configRow?.value ?? '';
 
-      if (lastReset !== currentSunday) {
-        console.log('New week detected, resetting progress...');
-
+      if (!lastReset) {
+        // First run with new reset tracking: initialize without wiping active week
         const { data: { user } } = await supabase.auth.getUser();
-        
         if (user) {
-          // Mark the new week FIRST so a concurrent device doesn't double-reset
           await supabase
             .from('app_config')
-            .upsert({ user_id: user.id, key: 'last_reset_sunday', value: currentSunday });
+            .upsert({ user_id: user.id, key: 'last_reset_monday', value: currentMondayStr });
+        }
+      } else if (lastReset !== currentMondayStr) {
+        console.log('New week detected on Monday, archiving previous week and resetting progress...');
+
+        // 1. Snapshot the completed week into persistent history before wiping
+        try {
+          const { data: prevRoutines } = await supabase.from('routines').select('*').order('day_index');
+          const { data: prevExercises } = await supabase.from('exercises').select('*').order('order_index');
+
+          if (prevRoutines && prevExercises) {
+            const exByRoutine = new Map<string, Exercise[]>();
+            for (const ex of (prevExercises as Exercise[])) {
+              const list = exByRoutine.get(ex.routine_id) ?? [];
+              list.push(ex);
+              exByRoutine.set(ex.routine_id, list);
+            }
+
+            // The ending week's Monday was lastReset
+            const [ly, lm, ld] = lastReset.split('-').map(Number);
+            const endingMonday = new Date(ly, lm - 1, ld);
+            const historyStore = await loadHistoryStore();
+
+            for (const r of (prevRoutines as Routine[])) {
+              const dayDate = new Date(endingMonday);
+              dayDate.setDate(endingMonday.getDate() + r.day_index);
+              const dayDateStr = formatLocalDate(dayDate);
+              const rEx = exByRoutine.get(r.id) ?? [];
+
+              // If it had activity or was marked complete, archive it
+              historyStore[dayDateStr] = buildWorkoutDaySummary(r, rEx, dayDateStr);
+            }
+
+            await saveHistoryStore(historyStore);
+          }
+        } catch (archiveErr) {
+          console.warn('Failed to archive ending week history:', archiveErr);
         }
 
-        // Reset routines
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('app_config')
+            .upsert({ user_id: user.id, key: 'last_reset_monday', value: currentMondayStr });
+        }
+
+        // Reset routines completion
         await supabase.from('routines').update({ completed: false }).gte('day_index', 0);
 
-        // Reset all exercises' sets
+        // Reset all exercises' sets completion
         const { data: exercises } = await supabase.from('exercises').select('id, set_data');
         if (exercises) {
           await Promise.all(exercises.map((ex: any) => {
@@ -67,9 +115,9 @@ export function useRoutines() {
         }
       }
     } catch (err) {
-      console.error('Failed to perform weekly reset:', err);
+      console.error('Failed to perform weekly reset check:', err);
     }
-    // --------------------------
+    // --------------------------------------------------------------------------
 
     const { data, error } = await supabase
       .from('routines')
@@ -95,7 +143,6 @@ export function useRoutines() {
 
         if (seedErr) setError(`Auto-seed failed: ${seedErr.message}`);
         else {
-          // If ignoreDuplicates triggered, the select might return empty, so fetch again just in case
           if (!seeded || seeded.length === 0) {
             const { data: refetched } = await supabase.from('routines').select('*').order('day_index');
             setRoutines((refetched as Routine[]) ?? []);
@@ -119,8 +166,62 @@ export function useRoutines() {
     return error;
   }, []);
 
-  const toggleComplete = (r: Routine) =>
-    updateRoutine(r.id, { completed: !r.completed });
+  const toggleComplete = useCallback(async (r: Routine) => {
+    const nextCompleted = !r.completed;
+    // 1. Optimistic update
+    setRoutines(prev => prev.map(item => item.id === r.id ? { ...item, completed: nextCompleted } : item));
+
+    // 2. Persist routine
+    await supabase.from('routines').update({ completed: nextCompleted }).eq('id', r.id);
+
+    // 3. Update all exercises in this routine
+    const { data: exList } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('routine_id', r.id)
+      .order('order_index');
+
+    if (exList && exList.length > 0) {
+      const updatedExercises = exList.map(ex => {
+        const sets = Array.isArray(ex.set_data) ? ex.set_data : [];
+        const newSets = sets.map((s: any) => ({ ...s, completed: nextCompleted }));
+        return { ...ex, set_data: newSets };
+      });
+      await Promise.all(updatedExercises.map(ex =>
+        supabase.from('exercises').update({ set_data: ex.set_data }).eq('id', ex.id)
+      ));
+
+      // 4. Save to persistent history store
+      const monday = getWeekMonday(new Date());
+      const targetDate = new Date(monday);
+      targetDate.setDate(monday.getDate() + r.day_index);
+      const targetDateStr = formatLocalDate(targetDate);
+
+      const summary = buildWorkoutDaySummary(
+        { ...r, completed: nextCompleted },
+        updatedExercises as Exercise[],
+        targetDateStr,
+        undefined,
+        nextCompleted
+      );
+      await saveDayToHistory(summary);
+    } else {
+      // Routine without exercises: still record day summary
+      const monday = getWeekMonday(new Date());
+      const targetDate = new Date(monday);
+      targetDate.setDate(monday.getDate() + r.day_index);
+      const targetDateStr = formatLocalDate(targetDate);
+
+      const summary = buildWorkoutDaySummary(
+        { ...r, completed: nextCompleted },
+        [],
+        targetDateStr,
+        undefined,
+        nextCompleted
+      );
+      await saveDayToHistory(summary);
+    }
+  }, []);
 
   const setMuscleGroup = (r: Routine, muscle_group: string) =>
     updateRoutine(r.id, { muscle_group });

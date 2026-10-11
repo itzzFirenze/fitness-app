@@ -92,12 +92,25 @@
    display: flex;
    align-items: center;
    justify-content: center;
+   cursor: pointer;
+   transition: all 0.2s ease;
+}
+
+.dc__check:hover {
+   border-color: var(--accent);
+   color: var(--accent);
+   background: var(--accent-dim);
 }
 
 .dc__check--done {
    border-color: rgba(62, 207, 142, 0.5);
    background: var(--green-dim);
    color: var(--green);
+}
+
+.dc__check--done:hover {
+   border-color: rgba(62, 207, 142, 0.8);
+   background: rgba(62, 207, 142, 0.25);
 }
 
 @media (max-width: 600px) {

@@ -39,7 +39,7 @@ export default function CalendarPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<WorkoutDaySummary | null>(null);
 
-  const { history, loading } = useWorkoutHistory(viewYear, viewMonth);
+  const { history, loading, toggleDayCompletion } = useWorkoutHistory(viewYear, viewMonth);
 
   // Build calendar grid
   const calendarDays = useMemo(() => {
@@ -119,8 +119,21 @@ export default function CalendarPage() {
     setSelectedDay(null);
   };
 
-  // Count workout days this month
-  const workoutDaysCount = Array.from(history.values()).filter(d => d.completed).length;
+  // Count workout days and calculate stats for this view month
+  const monthWorkouts = useMemo(() => {
+    return Array.from(history.values()).filter(d => {
+      const [y, m] = d.date.split('-').map(Number);
+      return y === viewYear && m === viewMonth + 1;
+    });
+  }, [history, viewYear, viewMonth]);
+
+  const completedMonthWorkouts = useMemo(() => {
+    return monthWorkouts.filter(d => d.completed);
+  }, [monthWorkouts]);
+
+  const workoutDaysCount = completedMonthWorkouts.length;
+  const totalCaloriesBurned = completedMonthWorkouts.reduce((s, d) => s + d.estimatedCalories, 0);
+  const totalSetsDone = completedMonthWorkouts.reduce((s, d) => s + d.totalSets, 0);
 
   return (
     <div className="app">
@@ -157,15 +170,13 @@ export default function CalendarPage() {
           <div className="cal__stat-divider" />
           <div className="cal__stat">
             <span className="cal__stat-value">
-              {formatCalories(Array.from(history.values()).reduce((s, d) => s + d.estimatedCalories, 0))}
+              {formatCalories(totalCaloriesBurned)}
             </span>
             <span className="cal__stat-label">Calories Burned</span>
           </div>
           <div className="cal__stat-divider" />
           <div className="cal__stat">
-            <span className="cal__stat-value">
-              {Array.from(history.values()).reduce((s, d) => s + d.totalSets, 0)}
-            </span>
+            <span className="cal__stat-value">{totalSetsDone}</span>
             <span className="cal__stat-label">Total Sets</span>
           </div>
         </div>
@@ -339,12 +350,34 @@ export default function CalendarPage() {
               </div>
             )}
 
-            {selectedDay.completed && (
-              <div className="cal__completed-badge">
-                <CheckCircle2 size={16} strokeWidth={2.5} />
-                Workout Completed
-              </div>
-            )}
+            <div className="cal__details-footer">
+              <button
+                className={`cal__day-toggle-btn ${selectedDay.completed ? 'cal__day-toggle-btn--done' : ''}`}
+                onClick={async () => {
+                  await toggleDayCompletion(selectedDay.date);
+                  setSelectedDay(prev => prev ? {
+                    ...prev,
+                    completed: !prev.completed,
+                    exercises: prev.exercises.map(ex => ({
+                      ...ex,
+                      completedSets: !prev.completed ? ex.sets : 0,
+                    }))
+                  } : null);
+                }}
+              >
+                {selectedDay.completed ? (
+                  <>
+                    <CheckCircle2 size={16} strokeWidth={2.5} />
+                    <span>Workout Completed (Click to undo)</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={16} strokeWidth={2.5} />
+                    <span>Mark as Completed</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
 

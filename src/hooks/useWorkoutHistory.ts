@@ -1,96 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { MuscleGroup, ExerciseCategory } from '../types';
-import { parseMuscleGroups, getExerciseMuscleGroup, getExerciseCategory } from '../types';
+import type { Routine, Exercise } from '../types';
+import { parseMuscleGroups } from '../types';
+import type { WorkoutDaySummary, WorkoutExerciseSummary } from '../lib/workoutHistory';
+import {
+  WORKOUT_CATEGORY_MET,
+  getWorkoutCategoryMET,
+  getUserBodyWeightKg,
+  formatLocalDate,
+  getWeekMonday,
+  loadHistoryStore,
+  saveHistoryStore,
+  saveDayToHistory,
+  buildWorkoutDaySummary,
+} from '../lib/workoutHistory';
 
-export const WORKOUT_CATEGORY_MET: Record<string, number> = {
-  legs: 6.0,
-  back: 5.5,
-  chest: 5.0,
-  shoulders: 4.5,
-  arms: 4.0,
-  abs: 3.8,
-  core: 3.8,
-  cardio: 7.0,
-};
-
-export function getWorkoutCategoryMET(categoryOrGroup: string): number {
-  const str = (categoryOrGroup || '').toLowerCase();
-  if (str.includes('leg') || str.includes('squat') || str.includes('quad') || str.includes('hamstring') || str.includes('calf') || str.includes('glute') || str.includes('lunge')) {
-    return WORKOUT_CATEGORY_MET.legs;
-  }
-  if (str.includes('back') || str.includes('lat') || str.includes('row') || str.includes('pull') || str.includes('deadlift') || str.includes('trap')) {
-    return WORKOUT_CATEGORY_MET.back;
-  }
-  if (str.includes('chest') || str.includes('bench') || str.includes('push') || str.includes('pec') || str.includes('dip') || str.includes('fly')) {
-    return WORKOUT_CATEGORY_MET.chest;
-  }
-  if (str.includes('shoulder') || str.includes('delt') || str.includes('military') || str.includes('overhead') || str.includes('raise')) {
-    return WORKOUT_CATEGORY_MET.shoulders;
-  }
-  if (str.includes('arm') || str.includes('bicep') || str.includes('tricep') || str.includes('curl') || str.includes('forearm')) {
-    return WORKOUT_CATEGORY_MET.arms;
-  }
-  if (str.includes('abs') || str.includes('core') || str.includes('waist') || str.includes('crunch') || str.includes('plank')) {
-    return WORKOUT_CATEGORY_MET.abs;
-  }
-  if (str.includes('cardio') || str.includes('run') || str.includes('cycle') || str.includes('hiit') || str.includes('bike') || str.includes('treadmill')) {
-    return WORKOUT_CATEGORY_MET.cardio;
-  }
-  return 5.0; // default moderate resistance training
-}
-
-function getUserBodyWeightKg(): number {
-  try {
-    const cached = localStorage.getItem('apex_body_metrics');
-    if (cached) {
-      const data = JSON.parse(cached);
-      if (data.weight && data.weight > 0) {
-        return data.weightUnit === 'lbs' ? data.weight * 0.45359237 : Number(data.weight);
-      }
-    }
-  } catch {
-    // fallback
-  }
-  return 70; // standard default 70 kg (~154 lbs) if not entered yet
-}
-
-// Average ~2.5 to 3 minutes per set including rest interval
-const MINUTES_PER_SET = 2.75;
-
-export interface WorkoutExerciseSummary {
-  name: string;
-  sets: number;
-  completedSets: number;
-  totalReps: number;
-  totalWeight: number;
-  totalMinutes: number;
-  enteredCalories: number;
-  estimatedCalories: number;
-  exerciseType: string;
-  category: ExerciseCategory;
-}
-
-export interface WorkoutDaySummary {
-  date: string; // YYYY-MM-DD
-  day: string; // Monday, Tuesday, etc.
-  muscleGroups: MuscleGroup[];
-  completed: boolean;
-  exercises: WorkoutExerciseSummary[];
-  totalExercises: number;
-  totalSets: number;
-  totalVolume: number; // total weight × reps
-  estimatedCalories: number; // approximate calories burned (kcal)
-  durationEstimate: number; // rough estimate in minutes
-}
+export type { WorkoutDaySummary, WorkoutExerciseSummary };
+export { WORKOUT_CATEGORY_MET, getWorkoutCategoryMET };
 
 /**
  * Fetches workout history for a given month/year.
- * Since there's no dedicated history table, this uses the current week's
- * routines+exercises to populate the current week and returns empty for past dates.
- * 
- * For a full history system, you'd create a `workout_logs` table. For now,
- * we pull the current week's routine data live.
+ * Covers past weeks (from persistent storage & recurring routine plans),
+ * the current week (live from routines & exercises), and future planned workouts.
  */
 export function useWorkoutHistory(year: number, month: number) {
   const [history, setHistory] = useState<Map<string, WorkoutDaySummary>>(new Map());
@@ -100,184 +31,120 @@ export function useWorkoutHistory(year: number, month: number) {
     setLoading(true);
 
     try {
-      // Fetch all routines
-      const { data: routines, error: rErr } = await supabase
+      // 1. Fetch current weekly plan (routines & exercises)
+      const { data: routines } = await supabase
         .from('routines')
         .select('*')
         .order('day_index');
 
-      if (rErr || !routines) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch all exercises
-      const { data: exercises, error: exErr } = await supabase
+      const { data: exercises } = await supabase
         .from('exercises')
         .select('*')
         .order('order_index');
 
-      if (exErr) {
-        setLoading(false);
-        return;
-      }
-
-      // Build a map: routine_id -> exercises
-      const exercisesByRoutine = new Map<string, typeof exercises>();
-      for (const ex of (exercises ?? [])) {
+      const exercisesByRoutine = new Map<string, Exercise[]>();
+      for (const ex of ((exercises as Exercise[]) ?? [])) {
         const list = exercisesByRoutine.get(ex.routine_id) ?? [];
         list.push(ex);
         exercisesByRoutine.set(ex.routine_id, list);
       }
 
-      // Build a map: day_index -> routine data
-      const routineByDayIndex = new Map<number, (typeof routines)[0]>();
-      for (const r of routines) {
+      const routineByDayIndex = new Map<number, Routine>();
+      for (const r of ((routines as Routine[]) ?? [])) {
         routineByDayIndex.set(r.day_index, r);
       }
 
-      // Get the current week's Monday
-      const now = new Date();
-      const currentDay = now.getDay(); // 0=Sun
-      const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-      const currentMonday = new Date(now);
-      currentMonday.setDate(now.getDate() + mondayOffset);
-      currentMonday.setHours(0, 0, 0, 0);
+      // 2. Load persistent history store (synced with Supabase & localStorage)
+      const savedHistory = await loadHistoryStore();
 
-      const map = new Map<string, WorkoutDaySummary>();
+      // 3. Determine current week's range (Monday to Sunday)
+      const now = new Date();
+      const currentMonday = getWeekMonday(now);
+      const currentMondayStr = formatLocalDate(currentMonday);
+      const currentSunday = new Date(currentMonday);
+      currentSunday.setDate(currentMonday.getDate() + 6);
+      const currentSundayStr = formatLocalDate(currentSunday);
 
       const bodyWeightKg = getUserBodyWeightKg();
 
-      // Populate current week's data
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(currentMonday);
-        date.setDate(currentMonday.getDate() + i);
-        const dateStr = formatDate(date);
+      // 4. Calculate calendar grid dates for this view (startDow Monday = 0 to 6)
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
 
-        // Only include dates in the requested month
-        if (date.getFullYear() !== year || date.getMonth() !== month) continue;
+      // Monday=0, Sunday=6
+      let startDow = firstDayOfMonth.getDay() - 1;
+      if (startDow < 0) startDow = 6;
 
-        const routine = routineByDayIndex.get(i);
-        if (!routine) continue;
+      const gridStartDate = new Date(year, month, 1 - startDow);
+      const totalDaysToShow = startDow + lastDayOfMonth.getDate();
+      const rowsNeeded = Math.ceil(totalDaysToShow / 7);
+      const totalCells = rowsNeeded * 7;
+      const gridEndDate = new Date(gridStartDate);
+      gridEndDate.setDate(gridStartDate.getDate() + totalCells - 1);
 
-        const muscleGroups = parseMuscleGroups(routine.muscle_group);
-        const isRest = muscleGroups.length === 1 && muscleGroups[0] === 'Rest';
+      const map = new Map<string, WorkoutDaySummary>();
+      let hasStoreUpdates = false;
 
-        if (isRest) continue;
+      // 5. Iterate through all dates displayed in the grid
+      const iter = new Date(gridStartDate);
+      while (iter <= gridEndDate) {
+        const dateStr = formatLocalDate(iter);
+        const dayOfWeekIndex = (iter.getDay() + 6) % 7; // Mon=0 ... Sun=6
+        const routine = routineByDayIndex.get(dayOfWeekIndex);
 
-        const routineExercises = exercisesByRoutine.get(routine.id) ?? [];
+        const isCurrentWeek = dateStr >= currentMondayStr && dateStr <= currentSundayStr;
 
-        const exerciseSummaries: WorkoutExerciseSummary[] = routineExercises.map(ex => {
-          const setData = Array.isArray(ex.set_data) ? ex.set_data : [];
-          const category = getExerciseCategory(ex);
-          const completedSets = setData.filter((s: any) => s.completed).length;
+        if (isCurrentWeek && routine) {
+          const rExercises = exercisesByRoutine.get(routine.id) ?? [];
+          const muscleGroups = parseMuscleGroups(routine.muscle_group);
+          const isRest = muscleGroups.length === 1 && muscleGroups[0] === 'Rest';
 
-          // For strength / bodyweight
-          const totalReps = setData
-            .filter((s: any) => s.completed)
-            .reduce((sum: number, s: any) => sum + (parseInt(s.reps) || 0), 0);
-          const totalWeight = setData
-            .filter((s: any) => s.completed)
-            .reduce((sum: number, s: any) => {
-              const reps = parseInt(s.reps) || 0;
-              const weight = parseFloat(s.weight) || 0;
-              return sum + reps * weight;
-            }, 0);
+          if (!isRest) {
+            // Live routine summary for current week
+            const liveSummary = buildWorkoutDaySummary(
+              routine,
+              rExercises,
+              dateStr,
+              bodyWeightKg
+            );
 
-          // For cardio / time-based
-          const activeSetList = completedSets > 0
-            ? setData.filter((s: any) => s.completed)
-            : (routine.completed ? setData : setData.filter((s: any) => (parseFloat(s.calories) > 0) || (parseFloat(s.minutes) > 0)));
-
-          const enteredCalories = activeSetList
-            .reduce((sum: number, s: any) => sum + (parseFloat(s.calories) || 0), 0);
-
-          const totalMinutes = activeSetList
-            .reduce((sum: number, s: any) => sum + (parseFloat(s.minutes) || 0), 0);
-
-          const plannedMinutes = setData
-            .reduce((sum: number, s: any) => sum + (parseFloat(s.minutes) || 0), 0);
-
-          const resolvedCategory = getExerciseMuscleGroup(ex, routine.muscle_group);
-          const exerciseMET = getWorkoutCategoryMET(resolvedCategory);
-
-          let exerciseCalories = 0;
-          if (category === 'cardio_time') {
-            const effectiveMinutes = totalMinutes > 0 ? totalMinutes : (routine.completed ? plannedMinutes : 0);
-            if (enteredCalories > 0) {
-              // Exact user-entered calories burned!
-              exerciseCalories = Math.round(enteredCalories);
-            } else if (effectiveMinutes > 0) {
-              // Estimated calories from minutes spent & MET
-              const durationHours = effectiveMinutes / 60;
-              exerciseCalories = Math.round(exerciseMET * bodyWeightKg * durationHours);
+            // If persistent store already had this day marked completed, keep it completed
+            if (savedHistory[dateStr]?.completed && !liveSummary.completed) {
+              liveSummary.completed = true;
             }
-          } else {
-            // Machine weight or Reps only
-            const activeSets = completedSets > 0 ? completedSets : (routine.completed ? setData.length : 0);
-            const exerciseDurationHours = (activeSets * MINUTES_PER_SET) / 60;
-            exerciseCalories = Math.round(exerciseMET * bodyWeightKg * exerciseDurationHours);
+
+            map.set(dateStr, liveSummary);
+            savedHistory[dateStr] = liveSummary;
+            hasStoreUpdates = true;
           }
+        } else {
+          // Past or future week
+          if (savedHistory[dateStr]) {
+            map.set(dateStr, savedHistory[dateStr]);
+          } else if (routine) {
+            // Show planned routine for this day of the week
+            const muscleGroups = parseMuscleGroups(routine.muscle_group);
+            const isRest = muscleGroups.length === 1 && muscleGroups[0] === 'Rest';
 
-          return {
-            name: ex.name,
-            sets: setData.length,
-            completedSets,
-            totalReps,
-            totalWeight,
-            totalMinutes,
-            enteredCalories,
-            estimatedCalories: exerciseCalories,
-            exerciseType: ex.exercise_type || '',
-            category,
-          };
-        });
+            if (!isRest) {
+              const rExercises = exercisesByRoutine.get(routine.id) ?? [];
+              const templateSummary = buildWorkoutDaySummary(
+                routine,
+                rExercises,
+                dateStr,
+                bodyWeightKg,
+                false // not completed by default if not recorded
+              );
+              map.set(dateStr, templateSummary);
+            }
+          }
+        }
 
-        const totalSets = exerciseSummaries.reduce((s, e) => s + e.completedSets, 0);
-        const totalVolume = exerciseSummaries.reduce((s, e) => s + e.totalWeight, 0);
+        iter.setDate(iter.getDate() + 1);
+      }
 
-        // Duration estimation: cardio minutes + strength sets * MINUTES_PER_SET
-        const cardioMinutes = exerciseSummaries
-          .filter(e => e.category === 'cardio_time')
-          .reduce((sum, e) => sum + (e.totalMinutes > 0 ? e.totalMinutes : (routine.completed ? e.sets * 20 : 0)), 0);
-
-        const strengthCompletedSets = exerciseSummaries
-          .filter(e => e.category !== 'cardio_time')
-          .reduce((sum, e) => sum + e.completedSets, 0);
-
-        const strengthPlannedSets = exerciseSummaries
-          .filter(e => e.category !== 'cardio_time')
-          .reduce((sum, e) => sum + e.sets, 0);
-
-        const activeStrengthSets = strengthCompletedSets > 0 ? strengthCompletedSets : (routine.completed ? strengthPlannedSets : 0);
-        const strengthMinutes = activeStrengthSets * MINUTES_PER_SET;
-
-        const durationEstimate = Math.round(
-          (cardioMinutes + strengthMinutes) > 0
-            ? (cardioMinutes + strengthMinutes)
-            : Math.max(routineExercises.length * 8, 20)
-        );
-        const dayDurationHours = durationEstimate / 60;
-
-        const sumCalories = exerciseSummaries.reduce((s, e) => s + e.estimatedCalories, 0);
-        const dayMET = getWorkoutCategoryMET(routine.muscle_group);
-        const estimatedCalories = sumCalories > 0
-          ? sumCalories
-          : (routine.completed ? Math.round(dayMET * bodyWeightKg * dayDurationHours) : 0);
-
-        // Show all non-rest workout days (already filtered isRest above)
-        map.set(dateStr, {
-          date: dateStr,
-          day: routine.day,
-          muscleGroups,
-          completed: routine.completed,
-          exercises: exerciseSummaries,
-          totalExercises: routineExercises.length,
-          totalSets,
-          totalVolume,
-          estimatedCalories,
-          durationEstimate,
-        });
+      if (hasStoreUpdates) {
+        saveHistoryStore(savedHistory).catch(console.warn);
       }
 
       setHistory(map);
@@ -290,12 +157,74 @@ export function useWorkoutHistory(year: number, month: number) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { history, loading, refetch: load };
-}
+  /**
+   * Toggles completion status for any day in the calendar.
+   * Immediately updates UI and persists to history storage and Supabase.
+   */
+  const toggleDayCompletion = useCallback(async (dateStr: string) => {
+    const existing = history.get(dateStr);
+    if (!existing) return;
 
-function formatDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+    const nextCompleted = !existing.completed;
+    const updatedSummary: WorkoutDaySummary = {
+      ...existing,
+      completed: nextCompleted,
+      exercises: existing.exercises.map(ex => ({
+        ...ex,
+        completedSets: nextCompleted ? ex.sets : 0,
+      })),
+    };
+
+    // 1. Optimistically update local calendar map
+    setHistory(prev => {
+      const nextMap = new Map(prev);
+      nextMap.set(dateStr, updatedSummary);
+      return nextMap;
+    });
+
+    // 2. Save to persistent history store
+    await saveDayToHistory(updatedSummary);
+
+    // 3. If target date is within the current active week, sync Supabase routines & exercises too
+    const now = new Date();
+    const currentMonday = getWeekMonday(now);
+    const currentMondayStr = formatLocalDate(currentMonday);
+    const currentSunday = new Date(currentMonday);
+    currentSunday.setDate(currentMonday.getDate() + 6);
+    const currentSundayStr = formatLocalDate(currentSunday);
+
+    if (dateStr >= currentMondayStr && dateStr <= currentSundayStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dayIndex = (dateObj.getDay() + 6) % 7; // Mon=0 ... Sun=6
+
+      const { data: matchedRoutine } = await supabase
+        .from('routines')
+        .select('*')
+        .eq('day_index', dayIndex)
+        .maybeSingle();
+
+      if (matchedRoutine) {
+        await supabase
+          .from('routines')
+          .update({ completed: nextCompleted })
+          .eq('id', matchedRoutine.id);
+
+        const { data: routineExercises } = await supabase
+          .from('exercises')
+          .select('id, set_data')
+          .eq('routine_id', matchedRoutine.id);
+
+        if (routineExercises && routineExercises.length > 0) {
+          await Promise.all(routineExercises.map((ex: any) => {
+            const sets = Array.isArray(ex.set_data) ? ex.set_data : [];
+            const newSets = sets.map((s: any) => ({ ...s, completed: nextCompleted }));
+            return supabase.from('exercises').update({ set_data: newSets }).eq('id', ex.id);
+          }));
+        }
+      }
+    }
+  }, [history]);
+
+  return { history, loading, refetch: load, toggleDayCompletion };
 }

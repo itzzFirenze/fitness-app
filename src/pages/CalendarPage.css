@@ -472,7 +472,7 @@
   transition: width 0.5s ease;
 }
 
-/* ── Completed badge ──────────────────────────────────── */
+/* ── Completed badge & Toggle button ────────────────────── */
 .cal__completed-badge {
   display: flex;
   align-items: center;
@@ -486,6 +486,45 @@
   color: var(--green);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.cal__details-footer {
+  margin-top: 14px;
+}
+
+.cal__day-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.cal__day-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cal__day-toggle-btn--done {
+  background: var(--green-dim);
+  border-color: rgba(62, 207, 142, 0.25);
+  color: var(--green);
+}
+
+.cal__day-toggle-btn--done:hover {
+  border-color: rgba(62, 207, 142, 0.5);
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--green);
 }
 
 /* ── Empty hint ───────────────────────────────────────── */

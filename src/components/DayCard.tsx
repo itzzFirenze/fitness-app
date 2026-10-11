@@ -7,9 +7,10 @@ import './DayCard.css';
 interface Props {
    routine: Routine;
    isToday: boolean;
+   onToggleComplete?: (routine: Routine) => void;
 }
 
-export default function DayCard({ routine, isToday }: Props) {
+export default function DayCard({ routine, isToday, onToggleComplete }: Props) {
    const navigate = useNavigate();
    const isRest = isRestRoutine(routine.muscle_group);
    const groups = parseMuscleGroups(routine.muscle_group);
@@ -32,6 +33,12 @@ export default function DayCard({ routine, isToday }: Props) {
             {!isRest && (
                <div
                   className={`dc__check ${routine.completed ? 'dc__check--done' : ''}`}
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     onToggleComplete?.(routine);
+                  }}
+                  role="button"
+                  title={routine.completed ? "Mark incomplete" : "Mark completed"}
                >
                   {routine.completed ? '✓' : '○'}
                </div>
