@@ -115,6 +115,21 @@ export default function ExerciseCard({
    const patchSet = (id: string, field: 'reps' | 'weight' | 'minutes' | 'calories', val: string) =>
       saveSets(sets.map(s => (s.id === id ? { ...s, [field]: val } : s)));
 
+   // Weight stepper: steps of 2.5 kg starting from 0
+   const stepWeight = (id: string, direction: 1 | -1) => {
+      const s = sets.find(x => x.id === id);
+      if (!s) return;
+      const current = parseFloat(s.weight) || 0;
+      const stepped = Math.round(current / 2.5) * 2.5 + direction * 2.5;
+      const next = Math.max(0, stepped);
+      // Format: no trailing .0 for whole numbers, keep .5 for halves
+      const formatted = next % 1 === 0 ? String(next) : next.toFixed(1);
+      patchSet(id, 'weight', formatted);
+   };
+
+   // Only allow numeric characters (digits and one decimal point) in reps/weight
+   const numericOnly = (val: string) => val.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+
    const addSet = () => {
       const last = sets[sets.length - 1];
       saveSets([
@@ -517,21 +532,18 @@ export default function ExerciseCard({
                            <span>SET</span>
                            <span>REPS (NO WEIGHT)</span>
                            <span></span>
-                           <span></span>
                         </div>
                         {sets.map((s, i) => (
                            <div key={s.id} className={`set-row set-row--reps ${s.completed ? 'set-row--done' : ''}`}>
                               <span className="set-num">{i + 1}</span>
-                              <input className="set-inp" value={s.reps} placeholder="reps (e.g. 15)"
-                                 onChange={e => patchSet(s.id, 'reps', e.target.value)} />
-                              <button
-                                 type="button"
-                                 className={`set-chk-btn ${s.completed ? 'set-chk-btn--done' : ''}`}
-                                 onClick={() => toggleSetComplete(s.id)}
-                                 title={s.completed ? "Mark incomplete" : "Mark completed"}
-                              >
-                                 ✓
-                              </button>
+                              <input
+                                 className="set-inp"
+                                 value={s.reps}
+                                 placeholder="15"
+                                 inputMode="numeric"
+                                 pattern="[0-9]*"
+                                 onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
+                              />
                               <button className="set-rm" onClick={() => deleteSet(s.id)}
                                  disabled={sets.length <= 1}>×</button>
                            </div>
@@ -547,23 +559,39 @@ export default function ExerciseCard({
                            <span>REPS</span>
                            <span>WEIGHT (KG)</span>
                            <span></span>
-                           <span></span>
                         </div>
                         {sets.map((s, i) => (
                            <div key={s.id} className={`set-row set-row--weight ${s.completed ? 'set-row--done' : ''}`}>
                               <span className="set-num">{i + 1}</span>
-                              <input className="set-inp" value={s.reps} placeholder="reps"
-                                 onChange={e => patchSet(s.id, 'reps', e.target.value)} />
-                              <input className="set-inp" value={s.weight} placeholder="kg"
-                                 onChange={e => patchSet(s.id, 'weight', e.target.value)} />
-                              <button
-                                 type="button"
-                                 className={`set-chk-btn ${s.completed ? 'set-chk-btn--done' : ''}`}
-                                 onClick={() => toggleSetComplete(s.id)}
-                                 title={s.completed ? "Mark incomplete" : "Mark completed"}
-                              >
-                                 ✓
-                              </button>
+                              <input
+                                 className="set-inp"
+                                 value={s.reps}
+                                 placeholder="10"
+                                 inputMode="numeric"
+                                 pattern="[0-9]*"
+                                 onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
+                              />
+                              <div className="set-weight-ctrl">
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepWeight(s.id, -1)}
+                                    aria-label="Decrease weight"
+                                 >−</button>
+                                 <input
+                                    className="set-inp set-inp--weight"
+                                    value={s.weight}
+                                    placeholder="0"
+                                    inputMode="decimal"
+                                    onChange={e => patchSet(s.id, 'weight', numericOnly(e.target.value))}
+                                 />
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepWeight(s.id, 1)}
+                                    aria-label="Increase weight"
+                                 >+</button>
+                              </div>
                               <button className="set-rm" onClick={() => deleteSet(s.id)}
                                  disabled={sets.length <= 1}>×</button>
                            </div>

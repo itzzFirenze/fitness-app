@@ -537,12 +537,14 @@
 
 .set-head--weight,
 .set-row--weight {
-  grid-template-columns: 26px 1fr 1fr 28px 22px;
+  /* SET | REPS | WEIGHT_CTRL | DEL */
+  grid-template-columns: 26px 1fr 1fr 22px;
 }
 
 .set-head--reps,
 .set-row--reps {
-  grid-template-columns: 26px 1fr 28px 22px;
+  /* SET | REPS | DEL */
+  grid-template-columns: 26px 1fr 22px;
 }
 
 .set-head--cardio,
@@ -673,7 +675,73 @@
   cursor: not-allowed;
 }
 
+/* ── Weight stepper control ──────────────────────────────── */
+.set-weight-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
 
+.set-wt-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 1.05rem;
+  font-weight: 700;
+  width: 26px;
+  min-width: 26px;
+  height: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.set-wt-btn:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.set-wt-btn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.set-inp--weight {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  border-left: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  background: transparent !important;
+  padding: 5px 4px !important;
+  text-align: center;
+}
+
+/* Hide browser number input spin arrows globally */
+input[inputmode="numeric"]::-webkit-outer-spin-button,
+input[inputmode="numeric"]::-webkit-inner-spin-button,
+input[inputmode="decimal"]::-webkit-outer-spin-button,
+input[inputmode="decimal"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[inputmode="numeric"],
+input[inputmode="decimal"],
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 
 .set-add-btn {
   width: 100%;
