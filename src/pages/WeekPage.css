@@ -167,20 +167,31 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  gap: 1px;
+  pointer-events: none;
 }
 
 .ring-pct {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   color: var(--text-1);
   line-height: 1;
+  letter-spacing: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ring-sub {
-  font-size: 0.46rem;
+  font-size: 0.44rem;
   color: var(--text-3);
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ── Progress bar ───────────────────────────────────────── */

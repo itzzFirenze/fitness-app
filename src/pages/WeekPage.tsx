@@ -17,13 +17,40 @@ function getTodayIndex() {
 
 export default function WeekPage() {
    const navigate = useNavigate();
-   const { routines, loading, error, toggleComplete } = useRoutines();
+   const { routines, routineProgress, loading, error, toggleComplete } = useRoutines();
    const { metrics, stats } = useBodyMetrics();
    const todayIndex = useMemo(() => getTodayIndex(), []);
 
-   const done = routines.filter(r => !isRestRoutine(r.muscle_group) && r.completed).length;
-   const total = routines.filter(r => !isRestRoutine(r.muscle_group)).length;
-   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+   const workoutRoutines = useMemo(
+      () => routines.filter(r => !isRestRoutine(r.muscle_group)),
+      [routines]
+   );
+
+   const progressMap = useMemo(() => {
+      const map = new Map<string, number>();
+      for (const r of routines) {
+         if (isRestRoutine(r.muscle_group)) {
+            map.set(r.id, 1);
+         } else if (r.completed) {
+            map.set(r.id, 1);
+         } else {
+            map.set(r.id, routineProgress[r.id]?.progress ?? 0);
+         }
+      }
+      return map;
+   }, [routines, routineProgress]);
+
+   const totalWorkoutDays = workoutRoutines.length;
+
+   // Fully completed days
+   const done = workoutRoutines.filter(r => r.completed || (progressMap.get(r.id) ?? 0) >= 1).length;
+
+   // Total week progress percentage (average of workout routines progress)
+   const weekPct = useMemo(() => {
+      if (totalWorkoutDays === 0) return 0;
+      const sum = workoutRoutines.reduce((acc, r) => acc + (progressMap.get(r.id) ?? 0), 0);
+      return Math.round((sum / totalWorkoutDays) * 100);
+   }, [workoutRoutines, progressMap, totalWorkoutDays]);
 
    if (loading) return (
       <div className="wp-loading">
@@ -54,6 +81,9 @@ export default function WeekPage() {
    }
 
    const today = routines[todayIndex];
+   const todayProgress = today ? (progressMap.get(today.id) ?? 0) : 0;
+   const todayPct = Math.round(todayProgress * 100);
+   const isTodayDone = today ? (today.completed || todayProgress >= 1) : false;
 
    return (
       <div className="app">
@@ -97,11 +127,22 @@ export default function WeekPage() {
                               <circle cx="22" cy="22" r="18" className="ring-track" />
                               <circle cx="22" cy="22" r="18" className="ring-fill"
                                  strokeDasharray={`${2 * Math.PI * 18}`}
-                                 strokeDashoffset={`${2 * Math.PI * 18 * (1 - pct / 100)}`} />
+                                 strokeDashoffset={`${2 * Math.PI * 18 * (1 - todayPct / 100)}`}
+                                 style={{
+                                    stroke: isTodayDone ? 'var(--green)' : 'var(--accent)',
+                                    transition: 'stroke-dashoffset 0.6s ease, stroke 0.3s ease'
+                                 }}
+                              />
                            </svg>
                            <div className="ring-label">
-                              <span className="ring-pct">{pct}%</span>
-                              <span className="ring-sub">done</span>
+                              {isTodayDone ? (
+                                 <span className="ring-pct" style={{ color: 'var(--green)', fontSize: '0.95rem' }}>✓</span>
+                              ) : (
+                                 <>
+                                    <span className="ring-pct">{todayPct}%</span>
+                                    <span className="ring-sub">done</span>
+                                 </>
+                              )}
                            </div>
                         </div>
                      </div>
@@ -110,9 +151,11 @@ export default function WeekPage() {
 
                <div className="wp__progress-row">
                   <div className="wp__bar">
-                     <div className="wp__bar-fill" style={{ width: `${pct}%` }} />
+                     <div className="wp__bar-fill" style={{ width: `${weekPct}%` }} />
                   </div>
-                  <span className="wp__progress-text">{done}/{total} this week</span>
+                  <span className="wp__progress-text">
+                     {weekPct}% this week · {done}/{totalWorkoutDays} done
+                  </span>
                </div>
 
                {/* Body Metrics Quick Bar */}
@@ -136,7 +179,7 @@ export default function WeekPage() {
 
             {/* Week strip */}
             {routines.length > 0 && (
-               <WeekStrip plan={routines} todayIndex={todayIndex} />
+               <WeekStrip plan={routines} todayIndex={todayIndex} progressMap={progressMap} />
             )}
 
             {/* Day list */}
@@ -151,6 +194,7 @@ export default function WeekPage() {
                      key={r.id}
                      routine={r}
                      isToday={i === todayIndex}
+                     progress={progressMap.get(r.id) ?? 0}
                      onToggleComplete={toggleComplete}
                   />
                ))}

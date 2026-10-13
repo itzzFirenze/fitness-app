@@ -8,7 +8,6 @@ import {
   Flame,
   Clock,
   Check,
-  CheckCircle2,
   CalendarDays,
 } from 'lucide-react';
 import { useWorkoutHistory } from '../hooks/useWorkoutHistory';
@@ -350,34 +349,27 @@ export default function CalendarPage() {
               </div>
             )}
 
-            <div className="cal__details-footer">
-              <button
-                className={`cal__day-toggle-btn ${selectedDay.completed ? 'cal__day-toggle-btn--done' : ''}`}
-                onClick={async () => {
-                  await toggleDayCompletion(selectedDay.date);
-                  setSelectedDay(prev => prev ? {
-                    ...prev,
-                    completed: !prev.completed,
-                    exercises: prev.exercises.map(ex => ({
-                      ...ex,
-                      completedSets: !prev.completed ? ex.sets : 0,
-                    }))
-                  } : null);
-                }}
-              >
-                {selectedDay.completed ? (
-                  <>
-                    <CheckCircle2 size={16} strokeWidth={2.5} />
-                    <span>Workout Completed (Click to undo)</span>
-                  </>
-                ) : (
-                  <>
-                    <Check size={16} strokeWidth={2.5} />
-                    <span>Mark as Completed</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {!selectedDay.completed && (
+              <div className="cal__details-footer">
+                <button
+                  className="cal__day-toggle-btn"
+                  onClick={async () => {
+                    await toggleDayCompletion(selectedDay.date);
+                    setSelectedDay(prev => prev ? {
+                      ...prev,
+                      completed: true,
+                      exercises: prev.exercises.map(ex => ({
+                        ...ex,
+                        completedSets: ex.sets,
+                      }))
+                    } : null);
+                  }}
+                >
+                  <Check size={16} strokeWidth={2.5} />
+                  <span>Mark as Completed</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 

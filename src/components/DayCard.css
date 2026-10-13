@@ -80,36 +80,103 @@
    line-height: 1;
 }
 
+.dc--in-progress {
+   border-color: rgba(91, 138, 245, 0.35);
+}
+
 .dc__check {
-   width: 26px;
-   height: 26px;
+   width: 28px;
+   height: 28px;
    border-radius: 50%;
-   border: 1.5px solid var(--border);
-   background: transparent;
-   color: transparent;
-   font-size: 0.78rem;
-   font-weight: 800;
+   position: relative;
    display: flex;
    align-items: center;
    justify-content: center;
    cursor: pointer;
    transition: all 0.2s ease;
+   background: transparent;
+   flex-shrink: 0;
 }
 
-.dc__check:hover {
-   border-color: var(--accent);
+.dc__check-ring {
+   width: 28px;
+   height: 28px;
+   position: absolute;
+   inset: 0;
+   transform: rotate(-90deg);
+}
+
+.dc__ring-track {
+   fill: none;
+   stroke: var(--border-2);
+   stroke-width: 2.2;
+   transition: stroke 0.2s;
+}
+
+.dc__ring-fill {
+   fill: none;
+   stroke: var(--accent);
+   stroke-width: 2.4;
+   stroke-linecap: round;
+   transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+}
+
+.dc__check--done .dc__ring-fill {
+   stroke: var(--green);
+}
+
+.dc__check--done .dc__ring-track {
+   stroke: rgba(62, 207, 142, 0.25);
+}
+
+.dc__check-inner {
+   position: absolute;
+   inset: 0;
+   z-index: 1;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   pointer-events: none;
+}
+
+.dc__check-tick {
+   color: var(--green);
+   font-size: 0.85rem;
+   font-weight: 800;
+   line-height: 1;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.dc__check-pct {
    color: var(--accent);
-   background: var(--accent-dim);
+   font-size: 0.5rem;
+   font-weight: 800;
+   line-height: 1;
+   letter-spacing: 0;
+   text-align: center;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+   font-variant-numeric: tabular-nums;
+}
+
+.dc__check:hover .dc__ring-track {
+   stroke: var(--accent-border);
 }
 
 .dc__check--done {
-   border-color: rgba(62, 207, 142, 0.5);
    background: var(--green-dim);
-   color: var(--green);
+}
+
+.dc__check--in-progress {
+   background: var(--accent-dim);
 }
 
 .dc__check--done:hover {
-   border-color: rgba(62, 207, 142, 0.8);
    background: rgba(62, 207, 142, 0.25);
 }
 

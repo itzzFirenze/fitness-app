@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Routine, Exercise, MuscleGroup } from '../types';
-import { formatMuscleGroups } from '../types';
+import { formatMuscleGroups, isRestRoutine } from '../types';
 import {
   getWeekMonday,
   formatLocalDate,
@@ -10,6 +10,12 @@ import {
   saveDayToHistory,
   buildWorkoutDaySummary,
 } from '../lib/workoutHistory';
+
+export interface RoutineProgressInfo {
+  totalSets: number;
+  completedSets: number;
+  progress: number;
+}
 
 const SEED_DAYS = [
   { day: 'Monday',    day_index: 0, muscle_group: 'Rest' as MuscleGroup, notes: '', completed: false },
@@ -24,6 +30,7 @@ const SEED_DAYS = [
 /* ── Weekly routines ─────────────────────────────────────── */
 export function useRoutines() {
   const [routines, setRoutines] = useState<Routine[]>([]);
+  const [routineProgress, setRoutineProgress] = useState<Record<string, RoutineProgressInfo>>({});
   const [loading, setLoading]   = useState(true);
   const [error,   setError]     = useState<string | null>(null);
 
@@ -131,6 +138,7 @@ export function useRoutines() {
     }
 
     // Auto-seed the 7 days on first run if the table is empty
+    let loadedRoutines: Routine[] = [];
     if (!data || data.length === 0) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -145,24 +153,85 @@ export function useRoutines() {
         else {
           if (!seeded || seeded.length === 0) {
             const { data: refetched } = await supabase.from('routines').select('*').order('day_index');
-            setRoutines((refetched as Routine[]) ?? []);
+            loadedRoutines = (refetched as Routine[]) ?? [];
           } else {
-            setRoutines((seeded as Routine[]) ?? []);
+            loadedRoutines = (seeded as Routine[]) ?? [];
           }
         }
       }
     } else {
-      setRoutines((data as Routine[]) ?? []);
+      loadedRoutines = (data as Routine[]) ?? [];
+    }
+    setRoutines(loadedRoutines);
+
+    // Compute progress for each routine based on exercises and set completion
+    try {
+      const { data: exercisesData } = await supabase
+        .from('exercises')
+        .select('id, routine_id, sets, set_data')
+        .order('order_index');
+
+      const progressMap: Record<string, RoutineProgressInfo> = {};
+      const exByRoutine = new Map<string, any[]>();
+      for (const ex of (exercisesData ?? [])) {
+        const list = exByRoutine.get(ex.routine_id) ?? [];
+        list.push(ex);
+        exByRoutine.set(ex.routine_id, list);
+      }
+
+      for (const r of loadedRoutines) {
+        if (isRestRoutine(r.muscle_group)) {
+          progressMap[r.id] = { totalSets: 0, completedSets: 0, progress: 1 };
+          continue;
+        }
+        if (r.completed) {
+          progressMap[r.id] = { totalSets: 0, completedSets: 0, progress: 1 };
+          continue;
+        }
+
+        const exList = exByRoutine.get(r.id) ?? [];
+        let totalSets = 0;
+        let completedSets = 0;
+        for (const ex of exList) {
+          const setData = Array.isArray(ex.set_data) && ex.set_data.length > 0
+            ? ex.set_data
+            : (ex.sets ? Array.from({ length: ex.sets }, () => ({ completed: false })) : []);
+          totalSets += setData.length;
+          completedSets += setData.filter((s: any) => s && s.completed).length;
+        }
+        const progress = totalSets > 0 ? completedSets / totalSets : 0;
+        progressMap[r.id] = { totalSets, completedSets, progress };
+      }
+      setRoutineProgress(progressMap);
+    } catch (exErr) {
+      console.warn('Failed to compute routine progress:', exErr);
     }
 
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const handleFocus = () => { load(); };
+    window.addEventListener('focus', handleFocus);
+    return () => { window.removeEventListener('focus', handleFocus); };
+  }, [load]);
 
   const updateRoutine = useCallback(async (id: string, patch: Partial<Routine>) => {
     const { error } = await supabase.from('routines').update(patch).eq('id', id);
-    if (!error) setRoutines(p => p.map(r => r.id === id ? { ...r, ...patch } : r));
+    if (!error) {
+      setRoutines(p => p.map(r => r.id === id ? { ...r, ...patch } : r));
+      if (patch.completed !== undefined) {
+        setRoutineProgress(prev => ({
+          ...prev,
+          [id]: {
+            totalSets: prev[id]?.totalSets ?? 0,
+            completedSets: patch.completed ? (prev[id]?.totalSets ?? 1) : 0,
+            progress: patch.completed ? 1 : 0,
+          }
+        }));
+      }
+    }
     return error;
   }, []);
 
@@ -170,6 +239,14 @@ export function useRoutines() {
     const nextCompleted = !r.completed;
     // 1. Optimistic update
     setRoutines(prev => prev.map(item => item.id === r.id ? { ...item, completed: nextCompleted } : item));
+    setRoutineProgress(prev => ({
+      ...prev,
+      [r.id]: {
+        totalSets: prev[r.id]?.totalSets ?? 0,
+        completedSets: nextCompleted ? (prev[r.id]?.totalSets ?? 1) : 0,
+        progress: nextCompleted ? 1 : 0,
+      }
+    }));
 
     // 2. Persist routine
     await supabase.from('routines').update({ completed: nextCompleted }).eq('id', r.id);
@@ -232,7 +309,7 @@ export function useRoutines() {
   const setNotes = (r: Routine, notes: string) =>
     updateRoutine(r.id, { notes });
 
-  return { routines, loading, error, refetch: load, toggleComplete, setMuscleGroup, setMuscleGroups, setNotes, updateRoutine };
+  return { routines, routineProgress, loading, error, refetch: load, toggleComplete, setMuscleGroup, setMuscleGroups, setNotes, updateRoutine };
 }
 
 /* ── Exercises for one routine ───────────────────────────── */
