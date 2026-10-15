@@ -34,8 +34,8 @@ export function useRoutines() {
   const [loading, setLoading]   = useState(true);
   const [error,   setError]     = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
 
     // --- Weekly Reset Logic (Stored in Supabase, week runs Monday to Sunday) ---
@@ -212,7 +212,7 @@ export function useRoutines() {
 
   useEffect(() => {
     load();
-    const handleFocus = () => { load(); };
+    const handleFocus = () => { load(true); };
     window.addEventListener('focus', handleFocus);
     return () => { window.removeEventListener('focus', handleFocus); };
   }, [load]);

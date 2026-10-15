@@ -127,6 +127,15 @@ export default function ExerciseCard({
       patchSet(id, 'weight', formatted);
    };
 
+   // Reps stepper: whole numbers, steps of 1, minimum 0
+   const stepReps = (id: string, direction: 1 | -1) => {
+      const s = sets.find(x => x.id === id);
+      if (!s) return;
+      const current = parseInt(s.reps, 10) || 0;
+      const next = Math.max(0, current + direction);
+      patchSet(id, 'reps', String(next));
+   };
+
    // Only allow numeric characters (digits and one decimal point) in reps/weight
    const numericOnly = (val: string) => val.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 
@@ -536,14 +545,28 @@ export default function ExerciseCard({
                         {sets.map((s, i) => (
                            <div key={s.id} className={`set-row set-row--reps ${s.completed ? 'set-row--done' : ''}`}>
                               <span className="set-num">{i + 1}</span>
-                              <input
-                                 className="set-inp"
-                                 value={s.reps}
-                                 placeholder="15"
-                                 inputMode="numeric"
-                                 pattern="[0-9]*"
-                                 onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
-                              />
+                              <div className="set-weight-ctrl">
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepReps(s.id, -1)}
+                                    aria-label="Decrease reps"
+                                 >−</button>
+                                 <input
+                                    className="set-inp set-inp--weight"
+                                    value={s.reps}
+                                    placeholder="15"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
+                                 />
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepReps(s.id, 1)}
+                                    aria-label="Increase reps"
+                                 >+</button>
+                              </div>
                               <button className="set-rm" onClick={() => deleteSet(s.id)}
                                  disabled={sets.length <= 1}>×</button>
                            </div>
@@ -563,14 +586,28 @@ export default function ExerciseCard({
                         {sets.map((s, i) => (
                            <div key={s.id} className={`set-row set-row--weight ${s.completed ? 'set-row--done' : ''}`}>
                               <span className="set-num">{i + 1}</span>
-                              <input
-                                 className="set-inp"
-                                 value={s.reps}
-                                 placeholder="10"
-                                 inputMode="numeric"
-                                 pattern="[0-9]*"
-                                 onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
-                              />
+                              <div className="set-weight-ctrl">
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepReps(s.id, -1)}
+                                    aria-label="Decrease reps"
+                                 >−</button>
+                                 <input
+                                    className="set-inp set-inp--weight"
+                                    value={s.reps}
+                                    placeholder="10"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    onChange={e => patchSet(s.id, 'reps', numericOnly(e.target.value))}
+                                 />
+                                 <button
+                                    className="set-wt-btn"
+                                    type="button"
+                                    onClick={() => stepReps(s.id, 1)}
+                                    aria-label="Increase reps"
+                                 >+</button>
+                              </div>
                               <div className="set-weight-ctrl">
                                  <button
                                     className="set-wt-btn"

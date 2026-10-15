@@ -34,21 +34,21 @@ function AppRoutes() {
   if (!user) return <LoginPage />;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<WeekPage />} />
-        <Route path="/routine/:day" element={<RoutinePage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<WeekPage />} />
+      <Route path="/routine/:day" element={<RoutinePage />} />
+      <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
+    </Routes>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
